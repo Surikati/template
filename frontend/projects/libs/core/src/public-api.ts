@@ -5,4 +5,5 @@ export * from './lib/models/problem-detail';
 export * from './lib/auth/auth.config';
 export * from './lib/auth/auth.service';
 export * from './lib/auth/auth.guard';
+export * from './lib/auth/role.guard';
 export * from './lib/config/app-config.token';

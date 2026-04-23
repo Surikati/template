@@ -75,6 +75,21 @@ public class AssemblyService {
                         "assembly.not_found", "Assembly job not found: " + id));
     }
 
+    /**
+     * Ephemeral preview — runs the same fetch + resolve + render pipeline as {@link #assemble}
+     * but emits HTML and skips job persistence, outbox emission, and document upload.
+     */
+    public String preview(AssemblyCommand cmd) {
+        TemplateVersionDto version = templateClient.getVersion(
+                cmd.templateId(), cmd.templateVersionNumber());
+        JsonNode composedAst = clauseResolver.resolveClauseRefs(version.content());
+
+        var renderRequest = new RenderingServiceClient.RenderRequest(
+                composedAst, cmd.data(), RenderingServiceClient.RenderFormat.HTML);
+        var rendered = renderingClient.render(renderRequest);
+        return new String(rendered.content(), java.nio.charset.StandardCharsets.UTF_8);
+    }
+
     @Transactional
     public AssemblyResult assemble(AssemblyCommand cmd) {
         UUID jobId = UUID.randomUUID();

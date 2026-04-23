@@ -5,18 +5,24 @@ import { MenuModule } from 'primeng/menu';
 import { MenuItem } from 'primeng/api';
 import { AuthService } from '@tmpmgmt/core';
 
+import { SearchBarComponent } from './search-bar.component';
+
 @Component({
   selector: 'tm-app-shell',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, ButtonModule, MenuModule],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, ButtonModule, MenuModule, SearchBarComponent],
   template: `
     <header class="topbar">
       <div class="brand">Template Management</div>
       <nav class="nav">
         <a routerLink="/templates" routerLinkActive="active">Šablony</a>
         <a routerLink="/clauses" routerLinkActive="active">Doložky</a>
+        @if (auth.hasRole('ADMIN')) {
+          <a routerLink="/admin" routerLinkActive="active">Administrace</a>
+        }
       </nav>
+      <tm-search-bar class="search-slot" />
       <div class="user">
         @if (auth.user(); as user) {
           <span class="username">{{ user.username }}</span>

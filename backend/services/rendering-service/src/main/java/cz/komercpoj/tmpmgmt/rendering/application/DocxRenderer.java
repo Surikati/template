@@ -43,11 +43,14 @@ import org.springframework.stereotype.Component;
 public class DocxRenderer {
 
     private final ExpressionEvaluator expressions;
+    private final VariableFormatter formatter;
     private final ObjectMapper mapper;
     private final ObjectFactory factory = Context.getWmlObjectFactory();
 
-    public DocxRenderer(ExpressionEvaluator expressions, ObjectMapper mapper) {
+    public DocxRenderer(
+            ExpressionEvaluator expressions, VariableFormatter formatter, ObjectMapper mapper) {
         this.expressions = expressions;
+        this.formatter = formatter;
         this.mapper = mapper;
     }
 
@@ -115,9 +118,11 @@ public class DocxRenderer {
                 switch (type) {
                     case "text" -> p.getContent().add(textRun(inline.path("text").asText("")));
                     case "variable" -> {
-                        String path = inline.path("attrs").path("path").asText("");
+                        JsonNode attrs = inline.path("attrs");
+                        String path = attrs.path("path").asText("");
+                        String format = attrs.path("format").asText(null);
                         Object resolved = resolvePath(path, data);
-                        p.getContent().add(textRun(stringify(resolved)));
+                        p.getContent().add(textRun(formatter.format(resolved, format)));
                     }
                     default -> { /* skip unsupported inline */ }
                 }

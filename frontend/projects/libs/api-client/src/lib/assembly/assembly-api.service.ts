@@ -23,6 +23,16 @@ export class AssemblyApiService {
   }
 
   /**
+   * Ephemeral HTML preview — backend resolves clauseRefs and renders the template
+   * without persisting a job or uploading to MinIO.
+   */
+  preview(req: AssembleRequest): Observable<string> {
+    return this.http.post(`${this.base}/preview`, req, {
+      responseType: 'text',
+    });
+  }
+
+  /**
    * Turns a relative path from document-service (e.g. `/api/v1/documents/.../files/DOCX`)
    * into an absolute URL pointing at the same gateway origin as {@code apiBase}.
    */

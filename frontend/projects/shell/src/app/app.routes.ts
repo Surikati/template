@@ -1,5 +1,5 @@
 import { Routes } from '@angular/router';
-import { authGuard } from '@tmpmgmt/core';
+import { authGuard, hasRole } from '@tmpmgmt/core';
 import { AppShellComponent } from './layout/app-shell.component';
 
 export const appRoutes: Routes = [
@@ -17,6 +17,12 @@ export const appRoutes: Routes = [
         path: 'clauses',
         loadChildren: () =>
           import('./features/clauses/clauses.routes').then((m) => m.clausesRoutes),
+      },
+      {
+        path: 'admin',
+        canActivate: [hasRole('ADMIN')],
+        loadChildren: () =>
+          import('./features/admin/admin.routes').then((m) => m.adminRoutes),
       },
       { path: '', pathMatch: 'full', redirectTo: 'templates' },
     ],

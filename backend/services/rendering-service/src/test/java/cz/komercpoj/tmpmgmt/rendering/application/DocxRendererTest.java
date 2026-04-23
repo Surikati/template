@@ -16,7 +16,8 @@ import org.junit.jupiter.api.Test;
 class DocxRendererTest {
 
     private final ObjectMapper mapper = new ObjectMapper();
-    private final DocxRenderer renderer = new DocxRenderer(new AntlrExpressionEvaluator(), mapper);
+    private final DocxRenderer renderer = new DocxRenderer(
+            new AntlrExpressionEvaluator(), new VariableFormatter(), mapper);
 
     @Test
     void rendersPlainParagraph() throws Exception {
@@ -260,6 +261,50 @@ class DocxRendererTest {
         assertThat(xml).contains("Drahý");
         assertThat(xml).doesNotContain("Levný");
         assertThat(xml).doesNotContain("Střední");
+    }
+
+    @Test
+    void variableWithCurrencyFormat_rendersLocalizedValue() throws Exception {
+        JsonNode ast = mapper.readTree("""
+            {
+              "type": "doc",
+              "content": [
+                { "type": "paragraph", "content": [
+                  { "type": "text", "text": "Cena: " },
+                  { "type": "variable",
+                    "attrs": { "path": "order.total", "format": "currency:CZK" } }
+                ]}
+              ]
+            }
+            """);
+
+        byte[] docx = renderer.render(ast, Map.of("order", Map.of("total", 12500)));
+        String xml = extractDocumentXml(docx);
+        // Czech locale: non-breaking space as grouping → "12 500,00 Kč" with NBSP
+        assertThat(xml).contains("Cena:");
+        assertThat(xml).contains("500");
+        assertThat(xml).contains(",00");
+        assertThat(xml).contains("Kč");
+    }
+
+    @Test
+    void variableWithDateFormat_rendersLocalizedDate() throws Exception {
+        JsonNode ast = mapper.readTree("""
+            {
+              "type": "doc",
+              "content": [
+                { "type": "paragraph", "content": [
+                  { "type": "text", "text": "Datum: " },
+                  { "type": "variable",
+                    "attrs": { "path": "order.date", "format": "date:dd.MM.yyyy" } }
+                ]}
+              ]
+            }
+            """);
+
+        byte[] docx = renderer.render(ast, Map.of("order", Map.of("date", "2026-04-23")));
+        String xml = extractDocumentXml(docx);
+        assertThat(xml).contains("23.04.2026");
     }
 
     @Test

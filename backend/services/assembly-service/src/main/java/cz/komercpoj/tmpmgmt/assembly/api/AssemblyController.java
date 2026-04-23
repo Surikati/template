@@ -7,6 +7,7 @@ import cz.komercpoj.tmpmgmt.assembly.application.AssemblyService.AssemblyCommand
 import jakarta.validation.Valid;
 import java.net.URI;
 import java.util.UUID;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -40,6 +41,16 @@ public class AssemblyController {
                 result.downloadUrl(),
                 job.getCompletedAt());
         return ResponseEntity.created(URI.create("/api/v1/assemblies/" + job.getId())).body(body);
+    }
+
+    @PostMapping(value = "/preview", produces = MediaType.TEXT_HTML_VALUE)
+    public String preview(@Valid @RequestBody AssembleRequest req, @AuthenticationPrincipal Jwt jwt) {
+        return service.preview(new AssemblyCommand(
+                req.templateId(),
+                req.templateVersionNumber(),
+                req.data(),
+                AssemblyCommand.Format.DOCX,
+                currentUserId(jwt)));
     }
 
     @GetMapping("/{id}")

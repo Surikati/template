@@ -9,6 +9,7 @@ import {
   signal,
 } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { DialogModule } from 'primeng/dialog';
 import { DropdownModule } from 'primeng/dropdown';
 import { InputTextareaModule } from 'primeng/inputtextarea';
@@ -39,7 +40,7 @@ import { ProblemDetail } from '@tmpmgmt/core';
       [visible]="visible()"
       (visibleChange)="close($event)"
       [modal]="true"
-      [style]="{ width: '600px' }"
+      [style]="{ width: '800px' }"
       [draggable]="false"
     >
       @if (result() === null) {
@@ -60,7 +61,7 @@ import { ProblemDetail } from '@tmpmgmt/core';
             <textarea
               pInputTextarea
               formControlName="dataJson"
-              rows="10"
+              rows="8"
               spellcheck="false"
               class="json-area"
             ></textarea>
@@ -70,12 +71,36 @@ import { ProblemDetail } from '@tmpmgmt/core';
           </label>
         </form>
 
+        @if (previewHtml()) {
+          <div class="preview-section">
+            <div class="preview-head">
+              <strong>Náhled</strong>
+              <p-button
+                icon="pi pi-times"
+                [text]="true"
+                severity="secondary"
+                size="small"
+                (onClick)="previewHtml.set(null)"
+              />
+            </div>
+            <div class="preview-body" [innerHTML]="sanitizedPreview()"></div>
+          </div>
+        }
+
         <ng-template pTemplate="footer">
           <p-button
             label="Zrušit"
             severity="secondary"
             [text]="true"
             (onClick)="close(false)"
+          />
+          <p-button
+            label="Náhled"
+            icon="pi pi-eye"
+            severity="secondary"
+            [disabled]="form.invalid || previewing() || jsonError() !== null"
+            [loading]="previewing()"
+            (onClick)="preview()"
           />
           <p-button
             label="Vygenerovat"
@@ -120,6 +145,24 @@ import { ProblemDetail } from '@tmpmgmt/core';
       .success-icon { font-size: 3rem; color: #059669; margin-bottom: 0.75rem; }
       .success h3 { margin: 0; }
       .muted { color: #71717a; margin-top: 0.25rem; }
+      .preview-section {
+        margin-top: 1rem;
+        border: 1px solid #e4e4e7;
+        border-radius: 4px;
+        overflow: hidden;
+      }
+      .preview-head {
+        display: flex; justify-content: space-between; align-items: center;
+        padding: 0.5rem 0.75rem;
+        background: #f4f4f5;
+        border-bottom: 1px solid #e4e4e7;
+      }
+      .preview-body {
+        max-height: 400px; overflow: auto;
+        padding: 1rem;
+        background: #ffffff;
+        font-size: 0.9rem;
+      }
     `,
   ],
 })
@@ -127,6 +170,7 @@ export class GenerateDocumentDialogComponent {
   private readonly api = inject(AssemblyApiService);
   private readonly fb = inject(FormBuilder);
   private readonly messages = inject(MessageService);
+  private readonly sanitizer = inject(DomSanitizer);
 
   readonly visible = input(false);
   readonly templateId = input.required<string>();
@@ -135,7 +179,9 @@ export class GenerateDocumentDialogComponent {
   readonly visibleChange = output<boolean>();
 
   protected readonly submitting = signal(false);
+  protected readonly previewing = signal(false);
   protected readonly result = signal<AssembleResponse | null>(null);
+  protected readonly previewHtml = signal<string | null>(null);
 
   protected readonly versionOptions = computed(() =>
     (this.versions() ?? []).map((v) => ({
@@ -144,13 +190,18 @@ export class GenerateDocumentDialogComponent {
     })),
   );
 
+  // Backend is trusted (runs inside our gateway); still pass through DomSanitizer for safety.
+  protected readonly sanitizedPreview = computed<SafeHtml | null>(() => {
+    const html = this.previewHtml();
+    return html ? this.sanitizer.bypassSecurityTrustHtml(html) : null;
+  });
+
   protected readonly form = this.fb.nonNullable.group({
     versionNumber: [0, Validators.required],
     dataJson: ['{\n  \n}', Validators.required],
   });
 
   constructor() {
-    // Default to the newest version when the dialog opens.
     effect(() => {
       if (this.visible()) {
         const versions = this.versions();
@@ -175,10 +226,37 @@ export class GenerateDocumentDialogComponent {
     }
   }
 
+  protected preview(): void {
+    if (this.form.invalid || this.previewing() || this.jsonError()) return;
+    this.previewing.set(true);
+    const raw = this.form.getRawValue();
+    const data = JSON.parse(raw.dataJson) as Record<string, unknown>;
+
+    this.api
+      .preview({
+        templateId: this.templateId(),
+        templateVersionNumber: raw.versionNumber,
+        data,
+      })
+      .subscribe({
+        next: (html) => {
+          this.previewing.set(false);
+          this.previewHtml.set(html);
+        },
+        error: (err: ProblemDetail) => {
+          this.previewing.set(false);
+          this.messages.add({
+            severity: 'error',
+            summary: 'Náhled selhal',
+            detail: err.detail ?? err.title,
+          });
+        },
+      });
+  }
+
   protected submit(): void {
     if (this.form.invalid || this.submitting()) return;
-    const jsonErr = this.jsonError();
-    if (jsonErr) return;
+    if (this.jsonError()) return;
 
     this.submitting.set(true);
     const raw = this.form.getRawValue();
@@ -210,14 +288,13 @@ export class GenerateDocumentDialogComponent {
     const res = this.result();
     if (!res?.downloadUrl) return;
     const absolute = this.api.resolveDownloadUrl(res.downloadUrl);
-    // Open in a new tab — the backend sets Content-Disposition: attachment so the browser downloads.
     window.open(absolute, '_blank');
   }
 
   protected close(next: boolean): void {
     if (!next) {
-      // Reset state so next open starts fresh.
       this.result.set(null);
+      this.previewHtml.set(null);
       this.form.controls.dataJson.setValue('{\n  \n}');
     }
     this.visibleChange.emit(next);

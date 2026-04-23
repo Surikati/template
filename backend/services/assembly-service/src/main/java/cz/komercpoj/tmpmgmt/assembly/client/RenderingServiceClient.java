@@ -13,7 +13,8 @@ public interface RenderingServiceClient {
     RenderResponse render(@RequestBody RenderRequest request);
 
     enum RenderFormat {
-        DOCX
+        DOCX,
+        HTML
     }
 
     record RenderRequest(JsonNode content, Map<String, Object> data, RenderFormat format) {}
