@@ -1,0 +1,146 @@
+{
+  "$schema": "./node_modules/@angular/cli/lib/config/schema.json",
+  "version": 1,
+  "newProjectRoot": "projects",
+  "projects": {
+    "shell": {
+      "projectType": "application",
+      "schematics": {
+        "@schematics/angular:component": {
+          "style": "scss",
+          "standalone": true,
+          "changeDetection": "OnPush"
+        }
+      },
+      "root": "projects/shell",
+      "sourceRoot": "projects/shell/src",
+      "prefix": "tm",
+      "architect": {
+        "build": {
+          "builder": "@angular-devkit/build-angular:application",
+          "options": {
+            "outputPath": "dist/shell",
+            "index": "projects/shell/src/index.html",
+            "browser": "projects/shell/src/main.ts",
+            "polyfills": ["zone.js"],
+            "tsConfig": "projects/shell/tsconfig.app.json",
+            "assets": [
+              { "glob": "**/*", "input": "projects/shell/public" }
+            ],
+            "styles": [
+              "node_modules/primeicons/primeicons.css",
+              "node_modules/primeng/resources/themes/lara-light-blue/theme.css",
+              "node_modules/primeng/resources/primeng.min.css",
+              "projects/shell/src/styles.scss"
+            ],
+            "scripts": []
+          },
+          "configurations": {
+            "production": {
+              "budgets": [
+                { "type": "initial", "maximumWarning": "1mb", "maximumError": "2mb" }
+              ],
+              "outputHashing": "all"
+            },
+            "development": {
+              "optimization": false,
+              "extractLicenses": false,
+              "sourceMap": true
+            }
+          },
+          "defaultConfiguration": "production"
+        },
+        "serve": {
+          "builder": "@angular-devkit/build-angular:dev-server",
+          "configurations": {
+            "production": { "buildTarget": "shell:build:production" },
+            "development": { "buildTarget": "shell:build:development" }
+          },
+          "defaultConfiguration": "development"
+        },
+        "test": {
+          "builder": "@angular-devkit/build-angular:karma",
+          "options": {
+            "polyfills": ["zone.js", "zone.js/testing"],
+            "tsConfig": "projects/shell/tsconfig.spec.json"
+          }
+        }
+      }
+    },
+    "core": {
+      "projectType": "library",
+      "root": "projects/libs/core",
+      "sourceRoot": "projects/libs/core/src",
+      "prefix": "tmc",
+      "architect": {
+        "build": {
+          "builder": "@angular-devkit/build-angular:ng-packagr",
+          "options": {
+            "project": "projects/libs/core/ng-package.json",
+            "tsConfig": "projects/libs/core/tsconfig.lib.json"
+          }
+        }
+      }
+    },
+    "ui-kit": {
+      "projectType": "library",
+      "root": "projects/libs/ui-kit",
+      "sourceRoot": "projects/libs/ui-kit/src",
+      "prefix": "tmu",
+      "architect": {
+        "build": {
+          "builder": "@angular-devkit/build-angular:ng-packagr",
+          "options": {
+            "project": "projects/libs/ui-kit/ng-package.json",
+            "tsConfig": "projects/libs/ui-kit/tsconfig.lib.json"
+          }
+        }
+      }
+    },
+    "template-editor": {
+      "projectType": "library",
+      "root": "projects/libs/template-editor",
+      "sourceRoot": "projects/libs/template-editor/src",
+      "prefix": "tme",
+      "architect": {
+        "build": {
+          "builder": "@angular-devkit/build-angular:ng-packagr",
+          "options": {
+            "project": "projects/libs/template-editor/ng-package.json",
+            "tsConfig": "projects/libs/template-editor/tsconfig.lib.json"
+          }
+        }
+      }
+    },
+    "questionnaire-runner": {
+      "projectType": "library",
+      "root": "projects/libs/questionnaire-runner",
+      "sourceRoot": "projects/libs/questionnaire-runner/src",
+      "prefix": "tmq",
+      "architect": {
+        "build": {
+          "builder": "@angular-devkit/build-angular:ng-packagr",
+          "options": {
+            "project": "projects/libs/questionnaire-runner/ng-package.json",
+            "tsConfig": "projects/libs/questionnaire-runner/tsconfig.lib.json"
+          }
+        }
+      }
+    },
+    "api-client": {
+      "projectType": "library",
+      "root": "projects/libs/api-client",
+      "sourceRoot": "projects/libs/api-client/src",
+      "prefix": "tma",
+      "architect": {
+        "build": {
+          "builder": "@angular-devkit/build-angular:ng-packagr",
+          "options": {
+            "project": "projects/libs/api-client/ng-package.json",
+            "tsConfig": "projects/libs/api-client/tsconfig.lib.json"
+          }
+        }
+      }
+    }
+  }
+}

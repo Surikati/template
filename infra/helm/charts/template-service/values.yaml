@@ -1,0 +1,24 @@
+replicaCount: 2
+
+image: {}  # inherits global
+
+service:
+  port: 8081
+
+autoscaling:
+  enabled: false
+  minReplicas: 2
+  maxReplicas: 8
+  targetCPUUtilizationPercentage: 75
+
+resources:
+  requests: { cpu: 200m, memory: 512Mi }
+  limits:   { cpu: "1",  memory: 1Gi }
+
+env:
+  - name: TEMPLATE_DB_URL
+    value: jdbc:postgresql://tmpmgmt-postgresql:5432/template_service
+  - name: TEMPLATE_DB_USER
+    valueFrom: { secretKeyRef: { name: template-service-db, key: username } }
+  - name: TEMPLATE_DB_PASSWORD
+    valueFrom: { secretKeyRef: { name: template-service-db, key: password } }

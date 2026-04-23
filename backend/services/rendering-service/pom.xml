@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>cz.komercpoj.tmpmgmt</groupId>
+        <artifactId>template-management-parent</artifactId>
+        <version>0.1.0-SNAPSHOT</version>
+        <relativePath>../../pom.xml</relativePath>
+    </parent>
+
+    <artifactId>rendering-service</artifactId>
+    <name>Template Management :: Services :: Rendering Service</name>
+    <description>Stateless DOCX/PDF/HTML rendering of resolved templates.</description>
+
+    <dependencies>
+        <dependency><groupId>cz.komercpoj.tmpmgmt</groupId><artifactId>common-web</artifactId></dependency>
+        <dependency><groupId>cz.komercpoj.tmpmgmt</groupId><artifactId>expression-core</artifactId></dependency>
+        <dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-web</artifactId></dependency>
+        <dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-oauth2-resource-server</artifactId></dependency>
+        <dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-actuator</artifactId></dependency>
+        <dependency><groupId>org.docx4j</groupId><artifactId>docx4j-core</artifactId></dependency>
+        <dependency>
+            <groupId>org.docx4j</groupId>
+            <artifactId>docx4j-JAXB-ReferenceImpl</artifactId>
+            <version>${docx4j.version}</version>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <finalName>${project.artifactId}</finalName>
+        <plugins>
+            <plugin><groupId>org.springframework.boot</groupId><artifactId>spring-boot-maven-plugin</artifactId></plugin>
+            <plugin>
+                <groupId>com.google.cloud.tools</groupId>
+                <artifactId>jib-maven-plugin</artifactId>
+                <configuration>
+                    <from>
+                        <!-- LibreOffice needed for DOCX->PDF conversion; swap base image. -->
+                        <image>eclipse-temurin:21-jre-jammy</image>
+                    </from>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+</project>

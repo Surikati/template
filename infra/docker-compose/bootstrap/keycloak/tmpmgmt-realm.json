@@ -1,0 +1,71 @@
+{
+  "realm": "tmpmgmt",
+  "enabled": true,
+  "displayName": "Template Management",
+  "accessTokenLifespan": 900,
+  "ssoSessionIdleTimeout": 1800,
+  "registrationAllowed": false,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "resetPasswordAllowed": true,
+
+  "roles": {
+    "realm": [
+      { "name": "ADMIN",           "description": "Full system administration" },
+      { "name": "TEMPLATE_EDITOR", "description": "Can create and publish templates" },
+      { "name": "CLAUSE_EDITOR",   "description": "Can create and publish clauses" },
+      { "name": "USER",            "description": "Can generate documents from templates" }
+    ]
+  },
+
+  "clients": [
+    {
+      "clientId": "tmpmgmt-frontend",
+      "name": "Template Management Frontend",
+      "enabled": true,
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": false,
+      "redirectUris": ["http://localhost:4200/*"],
+      "webOrigins": ["http://localhost:4200"],
+      "attributes": { "pkce.code.challenge.method": "S256" }
+    },
+    {
+      "clientId": "admin-service",
+      "name": "Admin Service (internal)",
+      "enabled": true,
+      "publicClient": false,
+      "secret": "change-me",
+      "serviceAccountsEnabled": true,
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false
+    }
+  ],
+
+  "users": [
+    {
+      "username": "admin.user",
+      "email": "admin@tmpmgmt.local",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Admin",
+      "lastName": "User",
+      "credentials": [
+        { "type": "password", "value": "admin", "temporary": false }
+      ],
+      "realmRoles": ["ADMIN"]
+    },
+    {
+      "username": "editor.user",
+      "email": "editor@tmpmgmt.local",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Editor",
+      "lastName": "User",
+      "credentials": [
+        { "type": "password", "value": "editor", "temporary": false }
+      ],
+      "realmRoles": ["TEMPLATE_EDITOR", "CLAUSE_EDITOR", "USER"]
+    }
+  ]
+}

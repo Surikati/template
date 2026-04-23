@@ -1,0 +1,32 @@
+server:
+  port: 8085
+
+spring:
+  application:
+    name: rendering-service
+  autoconfigure:
+    # Stateless service — no DB, no AMQP publisher.
+    exclude:
+      - org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${KEYCLOAK_ISSUER_URI:http://localhost:8180/realms/tmpmgmt}
+
+tmpmgmt:
+  outbox:
+    enabled: false
+  rendering:
+    libreoffice-binary: ${LIBREOFFICE_BIN:/usr/bin/soffice}
+    max-concurrent-conversions: 4
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info, prometheus
+
+logging:
+  pattern:
+    level: "%5p [%X{correlationId:-}]"

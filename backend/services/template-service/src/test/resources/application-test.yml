@@ -1,0 +1,20 @@
+# Overrides for integration tests. Testcontainers @ServiceConnection supplies the DataSource / RabbitMQ URIs.
+spring:
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+  jpa:
+    open-in-view: false
+    properties:
+      hibernate.jdbc.time_zone: UTC
+  # OAuth2 resource server is intentionally NOT configured here — TestSecurityConfig permits all
+  # requests, and dropping issuer-uri prevents Spring from trying to fetch JWKS on startup.
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.security.oauth2.resource.servlet.OAuth2ResourceServerAutoConfiguration
+
+tmpmgmt:
+  outbox:
+    enabled: true
+    publisher-enabled: false  # tests assert staged events directly in DB; no RabbitMQ publish
+    exchange: tmpmgmt.events

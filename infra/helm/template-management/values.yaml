@@ -1,0 +1,66 @@
+# Global values — merged into every subchart unless overridden.
+global:
+  image:
+    registry: registry.example.com
+    repositoryPrefix: template-management
+    tag: "0.1.0"
+    pullPolicy: IfNotPresent
+    pullSecrets: []
+
+  keycloak:
+    issuerUri: http://keycloak:8180/realms/tmpmgmt
+    realm: tmpmgmt
+
+  rabbitmq:
+    host: tmpmgmt-rabbitmq
+    port: 5672
+    existingSecret: tmpmgmt-rabbitmq-credentials
+
+  postgresql:
+    host: tmpmgmt-postgresql
+    port: 5432
+
+  minio:
+    endpoint: http://tmpmgmt-minio:9000
+    bucket: tmpmgmt-documents
+    existingSecret: tmpmgmt-minio-credentials
+
+  observability:
+    prometheus:
+      enabled: true
+    tracing:
+      enabled: true
+      endpoint: http://tempo:4318
+
+# Toggle bundled infrastructure. In production, point at external Postgres/RabbitMQ/Keycloak.
+postgresql:
+  enabled: true
+  auth:
+    postgresPassword: change-me
+rabbitmq:
+  enabled: true
+  auth:
+    username: tmpmgmt
+    password: change-me
+keycloak:
+  enabled: true
+  auth:
+    adminUser: admin
+    adminPassword: change-me
+minio:
+  enabled: true
+  auth:
+    rootUser: minioadmin
+    rootPassword: change-me
+opensearch:
+  enabled: true
+  singleNode: true
+  security:
+    enabled: false
+
+ingress:
+  enabled: true
+  className: nginx
+  host: tmpmgmt.example.com
+  tls: true
+  tlsSecret: tmpmgmt-tls

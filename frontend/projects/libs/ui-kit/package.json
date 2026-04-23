@@ -1,0 +1,10 @@
+{
+  "name": "@tmpmgmt/ui-kit",
+  "version": "0.1.0",
+  "peerDependencies": {
+    "@angular/common": "^18.2.0",
+    "@angular/core": "^18.2.0",
+    "primeng": "^17.18.0"
+  },
+  "sideEffects": false
+}

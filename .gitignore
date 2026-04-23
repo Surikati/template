@@ -1,0 +1,66 @@
+# ==== Java / Maven ====
+target/
+*.class
+*.jar
+*.war
+*.ear
+*.nar
+*.log
+hs_err_pid*
+.mvn/wrapper/maven-wrapper.jar
+
+# ==== Node / Angular ====
+node_modules/
+dist/
+.angular/
+*.tsbuildinfo
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ==== IDE ====
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+.project
+.classpath
+.settings/
+.factorypath
+
+# ==== OS ====
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ==== Claude Code local settings ====
+.claude/settings.local.json
+
+# ==== Env / Secrets ====
+.env
+.env.local
+.env.*.local
+*.local.yml
+secrets/
+application-local.yml
+application-local.yaml
+
+# ==== Build / Test output ====
+coverage/
+.nyc_output/
+*.lcov
+surefire-reports/
+failsafe-reports/
+
+# ==== Docker / Infra local state ====
+infra/docker-compose/data/
+infra/docker-compose/volumes/
+
+# ==== Generated sources ====
+**/generated-sources/
+**/generated/

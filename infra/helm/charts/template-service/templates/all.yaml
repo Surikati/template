@@ -1,0 +1,5 @@
+{{- include "tmpmgmt-service.deployment" . }}
+---
+{{- include "tmpmgmt-service.service" . }}
+---
+{{- include "tmpmgmt-service.hpa" . }}

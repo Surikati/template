@@ -1,0 +1,43 @@
+server:
+  port: 8082
+
+spring:
+  application:
+    name: clause-service
+  datasource:
+    url: ${CLAUSE_DB_URL:jdbc:postgresql://localhost:5432/clause_service}
+    username: ${CLAUSE_DB_USER:clause_service}
+    password: ${CLAUSE_DB_PASSWORD:clause_service}
+  jpa:
+    open-in-view: false
+    properties:
+      hibernate.jdbc.time_zone: UTC
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USER:guest}
+    password: ${RABBITMQ_PASSWORD:guest}
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${KEYCLOAK_ISSUER_URI:http://localhost:8180/realms/tmpmgmt}
+
+tmpmgmt:
+  outbox:
+    enabled: true
+    exchange: tmpmgmt.events
+    publisher-enabled: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info, prometheus
+
+logging:
+  pattern:
+    level: "%5p [%X{correlationId:-}]"

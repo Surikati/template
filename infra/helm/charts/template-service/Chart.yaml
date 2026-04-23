@@ -1,0 +1,11 @@
+apiVersion: v2
+name: template-service
+description: Template Service — CRUD, drafts, versioning.
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+
+dependencies:
+  - name: tmpmgmt-service
+    version: 0.1.0
+    repository: "file://../tmpmgmt-service"

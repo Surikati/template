@@ -1,0 +1,47 @@
+server:
+  port: 8084
+
+spring:
+  application:
+    name: assembly-service
+  datasource:
+    url: ${ASSEMBLY_DB_URL:jdbc:postgresql://localhost:5432/assembly_service}
+    username: ${ASSEMBLY_DB_USER:assembly_service}
+    password: ${ASSEMBLY_DB_PASSWORD:assembly_service}
+  jpa:
+    open-in-view: false
+    properties:
+      hibernate.jdbc.time_zone: UTC
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USER:guest}
+    password: ${RABBITMQ_PASSWORD:guest}
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${KEYCLOAK_ISSUER_URI:http://localhost:8180/realms/tmpmgmt}
+
+tmpmgmt:
+  outbox:
+    enabled: true
+    publisher-enabled: true
+  clients:
+    template-service-url: ${TEMPLATE_SERVICE_URL:http://template-service:8081}
+    clause-service-url: ${CLAUSE_SERVICE_URL:http://clause-service:8082}
+    rendering-service-url: ${RENDERING_SERVICE_URL:http://rendering-service:8085}
+    document-service-url: ${DOCUMENT_SERVICE_URL:http://document-service:8086}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info, prometheus
+
+logging:
+  pattern:
+    level: "%5p [%X{correlationId:-}]"

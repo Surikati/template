@@ -1,0 +1,16 @@
+package cz.komercpoj.tmpmgmt.clause.application;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import java.util.UUID;
+
+public final class ClauseCommands {
+
+    private ClauseCommands() {}
+
+    public record CreateClause(
+            String slug, String name, String description, String category, UUID ownerUserId) {}
+
+    public record PublishVersion(UUID clauseId, JsonNode content, String changeNote, UUID publishedBy) {}
+
+    public record Archive(UUID clauseId, UUID actorUserId) {}
+}

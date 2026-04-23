@@ -1,0 +1,26 @@
+version: 2
+updates:
+  - package-ecosystem: maven
+    directory: /backend
+    schedule: { interval: weekly }
+    open-pull-requests-limit: 10
+    groups:
+      spring: { patterns: ['org.springframework*', 'io.spring*'] }
+      test:   { patterns: ['org.junit*', 'org.testcontainers*', 'org.assertj*', 'org.mockito*'] }
+
+  - package-ecosystem: npm
+    directory: /frontend
+    schedule: { interval: weekly }
+    open-pull-requests-limit: 10
+    groups:
+      angular: { patterns: ['@angular/*', '@angular-devkit/*'] }
+      tiptap:  { patterns: ['@tiptap/*'] }
+      primeng: { patterns: ['primeng', 'primeicons'] }
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule: { interval: weekly }
+
+  - package-ecosystem: docker
+    directory: /infra/docker-compose
+    schedule: { interval: weekly }

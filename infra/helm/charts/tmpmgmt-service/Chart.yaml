@@ -1,0 +1,5 @@
+apiVersion: v2
+name: tmpmgmt-service
+description: Library chart — common templates (Deployment, Service, ConfigMap, HPA) for tmpmgmt microservices.
+type: library
+version: 0.1.0

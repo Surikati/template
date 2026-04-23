@@ -1,0 +1,18 @@
+Template Management {{ .Chart.AppVersion }} installed in namespace {{ .Release.Namespace }}.
+
+Next steps:
+  1. Verify all pods are Ready:
+       kubectl get pods -n {{ .Release.Namespace }}
+
+  2. Check Keycloak realm import:
+       kubectl logs -n {{ .Release.Namespace }} deploy/keycloak
+
+  3. Access UI:
+{{- if .Values.ingress.enabled }}
+       https://{{ .Values.ingress.host }}
+{{- else }}
+       kubectl port-forward svc/api-gateway 8080:8080
+       # then browse http://localhost:8080
+{{- end }}
+
+  4. First login — seeded users from the Keycloak realm import.
