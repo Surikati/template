@@ -1,0 +1,23 @@
+spring:
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+  jpa:
+    open-in-view: false
+    properties:
+      hibernate.jdbc.time_zone: UTC
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.security.oauth2.resource.servlet.OAuth2ResourceServerAutoConfiguration
+
+tmpmgmt:
+  outbox:
+    enabled: true
+    publisher-enabled: false
+    exchange: tmpmgmt.events
+  minio:
+    # endpoint + credentials overridden at runtime by @DynamicPropertySource
+    endpoint: http://localhost
+    access-key: minioadmin
+    secret-key: minioadmin
+    bucket: tmpmgmt-documents-test

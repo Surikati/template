@@ -6,7 +6,6 @@ import cz.komercpoj.tmpmgmt.assembly.application.AssemblyService;
 import cz.komercpoj.tmpmgmt.assembly.application.AssemblyService.AssemblyCommand;
 import jakarta.validation.Valid;
 import java.net.URI;
-import java.util.Base64;
 import java.util.UUID;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -36,8 +35,9 @@ public class AssemblyController {
         var body = new AssembleResponse(
                 job.getId(),
                 job.getState(),
+                result.documentId(),
                 result.filename(),
-                Base64.getEncoder().encodeToString(result.content()),
+                result.downloadUrl(),
                 job.getCompletedAt());
         return ResponseEntity.created(URI.create("/api/v1/assemblies/" + job.getId())).body(body);
     }
@@ -48,6 +48,7 @@ public class AssemblyController {
         return new AssembleResponse(
                 job.getId(),
                 job.getState(),
+                job.getResultDocumentId(),
                 null,
                 null,
                 job.getCompletedAt());

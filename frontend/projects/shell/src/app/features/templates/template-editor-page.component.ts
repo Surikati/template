@@ -35,6 +35,7 @@ import {
 } from '@tmpmgmt/template-editor';
 
 import { PublishVersionDialogComponent } from './publish-version-dialog.component';
+import { GenerateDocumentDialogComponent } from './generate-document-dialog.component';
 
 type SaveState = 'idle' | 'saving' | 'saved' | 'error';
 
@@ -48,6 +49,7 @@ type SaveState = 'idle' | 'saving' | 'saved' | 'error';
     TagModule,
     TemplateEditorComponent,
     PublishVersionDialogComponent,
+    GenerateDocumentDialogComponent,
   ],
   template: `
     @if (template(); as tpl) {
@@ -68,6 +70,13 @@ type SaveState = 'idle' | 'saving' | 'saved' | 'error';
           </div>
         </div>
         <div class="actions">
+          <p-button
+            label="Generovat dokument"
+            icon="pi pi-play"
+            severity="secondary"
+            [disabled]="!hasPublishedVersions()"
+            (onClick)="generateDialogVisible.set(true)"
+          />
           <p-button
             label="Publikovat verzi"
             icon="pi pi-upload"
@@ -108,6 +117,13 @@ type SaveState = 'idle' | 'saving' | 'saved' | 'error';
         [templateId]="tpl.id"
         (published)="onPublished($event)"
       />
+
+      <tm-generate-document-dialog
+        [visible]="generateDialogVisible()"
+        (visibleChange)="generateDialogVisible.set($event)"
+        [templateId]="tpl.id"
+        [versions]="versions() ?? []"
+      />
     } @else {
       <p>Načítám šablonu…</p>
     }
@@ -142,11 +158,14 @@ export class TemplateEditorPageComponent implements OnDestroy {
   protected readonly versions = signal<TemplateVersionResponse[] | undefined>(undefined);
   protected readonly saveState = signal<SaveState>('idle');
   protected readonly publishDialogVisible = signal(false);
+  protected readonly generateDialogVisible = signal(false);
 
   protected readonly initialContent = computed<TemplateDocument | null>(() => {
     const d = this.draft();
     return d ? (d.content as TemplateDocument) : null;
   });
+
+  protected readonly hasPublishedVersions = computed(() => (this.versions()?.length ?? 0) > 0);
 
   private readonly changes$ = new Subject<TemplateDocument>();
   private readonly saveSub: Subscription;

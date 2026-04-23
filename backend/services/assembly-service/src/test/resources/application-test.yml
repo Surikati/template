@@ -1,0 +1,27 @@
+spring:
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+  jpa:
+    open-in-view: false
+    properties:
+      hibernate.jdbc.time_zone: UTC
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.security.oauth2.resource.servlet.OAuth2ResourceServerAutoConfiguration
+
+tmpmgmt:
+  outbox:
+    enabled: true
+    publisher-enabled: false
+    exchange: tmpmgmt.events
+  clients:
+    # Overridden at runtime by @DynamicPropertySource to point at WireMock.
+    template-service-url: http://localhost
+    clause-service-url: http://localhost
+    rendering-service-url: http://localhost
+    document-service-url: http://localhost
+
+logging:
+  level:
+    org.springframework.cloud.openfeign: WARN

@@ -7,7 +7,7 @@ import java.util.UUID;
 public record AssembleResponse(
         UUID jobId,
         AssemblyState state,
+        UUID documentId,
         String filename,
-        /** DOCX bytes as Base64. MVP only — future will replace with MinIO-backed download URL. */
-        String contentBase64,
+        String downloadUrl,
         Instant completedAt) {}

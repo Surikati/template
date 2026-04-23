@@ -76,6 +76,10 @@ public class AssemblyJobEntity {
         return j;
     }
 
+    public void markResolvingClauses() {
+        this.state = AssemblyState.RESOLVING_CLAUSES;
+    }
+
     public void markRendering() {
         this.state = AssemblyState.RENDERING;
     }

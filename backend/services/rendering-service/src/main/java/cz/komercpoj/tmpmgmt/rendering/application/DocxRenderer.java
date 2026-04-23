@@ -5,7 +5,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import cz.komercpoj.tmpmgmt.common.DomainException;
 import cz.komercpoj.tmpmgmt.expression.ExpressionEvaluator;
 import java.io.ByteArrayOutputStream;
+import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import org.docx4j.jaxb.Context;
 import org.docx4j.openpackaging.packages.WordprocessingMLPackage;
@@ -21,7 +23,7 @@ import org.springframework.stereotype.Component;
 /**
  * Walks a template AST (ProseMirror/TipTap JSON) and produces a DOCX byte array via docx4j.
  *
- * <p>MVP node coverage:
+ * <p>Node coverage:
  *
  * <ul>
  *   <li>{@code doc} / {@code fragment} — root containers, walk children.
@@ -30,10 +32,12 @@ import org.springframework.stereotype.Component;
  *   <li>{@code text} — {@code W:r/W:t} with raw text.
  *   <li>{@code variable} — resolve {@code attrs.path} via data, emit as text.
  *   <li>{@code conditionBlock} — evaluate {@code attrs.when}; recurse if truthy.
+ *   <li>{@code repeatBlock} — evaluate {@code attrs.in} to a list, bind each item to
+ *       {@code attrs.each} in a scoped data context, recurse per item.
  * </ul>
  *
- * <p>Out of MVP: {@code repeatBlock}, {@code clauseRef} (resolved by assembly-service before
- * calling the renderer).
+ * <p>{@code clauseRef} is not handled here; assembly-service expands those before calling the
+ * renderer.
  */
 @Component
 public class DocxRenderer {
@@ -84,8 +88,9 @@ public class DocxRenderer {
                         if (innerBlocks.isArray()) walkBlocks(innerBlocks, data, doc);
                     }
                 }
+                case "repeatBlock" -> renderRepeatBlock(node, data, doc);
                 default -> {
-                    // Unknown block types are silently ignored in MVP.
+                    // Unknown block types are silently ignored.
                 }
             }
         }
@@ -119,6 +124,25 @@ public class DocxRenderer {
             }
         }
         return p;
+    }
+
+    private void renderRepeatBlock(JsonNode node, Map<String, Object> data, MainDocumentPart doc) {
+        String each = node.path("attrs").path("each").asText("");
+        String inExpr = node.path("attrs").path("in").asText("");
+        if (each.isBlank() || inExpr.isBlank()) return;
+
+        Object value = expressions.evaluate(inExpr, data);
+        if (!(value instanceof List<?> list)) return; // missing / wrong type → silently skip
+
+        JsonNode innerBlocks = node.path("content");
+        if (!innerBlocks.isArray()) return;
+
+        for (Object item : list) {
+            // Shallow copy of parent scope, shadowed by the loop variable.
+            Map<String, Object> scoped = new HashMap<>(data);
+            scoped.put(each, item);
+            walkBlocks(innerBlocks, scoped, doc);
+        }
     }
 
     private R textRun(String value) {
