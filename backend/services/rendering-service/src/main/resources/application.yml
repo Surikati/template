@@ -23,6 +23,10 @@ tmpmgmt:
     locale: ${RENDERING_LOCALE:cs-CZ}
     timezone: ${RENDERING_TIMEZONE:Europe/Prague}
     default-currency: ${RENDERING_DEFAULT_CURRENCY:CZK}
+    # Path to a Unicode TTF (e.g. DejaVuSans). Without this, Czech diacritics may render
+    # as empty boxes in PDFs. Deployers should bundle a font and point this at it.
+    pdf-font-path: ${PDF_FONT_PATH:}
+    pdf-font-family: ${PDF_FONT_FAMILY:DejaVu Sans}
 
 management:
   endpoints:

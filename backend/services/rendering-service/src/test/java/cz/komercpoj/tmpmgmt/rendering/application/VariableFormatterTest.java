@@ -80,7 +80,7 @@ class VariableFormatterTest {
     @Test
     void englishLocale_usesEnglishGroupingAndDecimal() {
         VariableFormatter en = new VariableFormatter(
-                new RenderingProperties("en-US", "America/New_York", "USD"));
+                new RenderingProperties("en-US", "America/New_York", "USD", null, null));
         // en-US: comma grouping, dot decimal
         assertThat(en.format(1234.5, "number:2")).isEqualTo("1,234.50");
     }
@@ -88,7 +88,7 @@ class VariableFormatterTest {
     @Test
     void englishLocaleDefaultCurrency_usesUsdSymbol() {
         VariableFormatter en = new VariableFormatter(
-                new RenderingProperties("en-US", "America/New_York", "USD"));
+                new RenderingProperties("en-US", "America/New_York", "USD", null, null));
         String out = en.format(100, "currency");
         assertThat(out).contains("$").contains("100");
     }
@@ -96,7 +96,7 @@ class VariableFormatterTest {
     @Test
     void timezoneOverride_shiftsInstantPresentation() {
         VariableFormatter ny = new VariableFormatter(
-                new RenderingProperties("en-US", "America/New_York", "USD"));
+                new RenderingProperties("en-US", "America/New_York", "USD", null, null));
         Instant noon = Instant.parse("2026-04-23T16:00:00Z"); // 12:00 EDT (UTC-4)
         String out = ny.format(noon, "datetime:yyyy-MM-dd HH:mm");
         assertThat(out).isEqualTo("2026-04-23 12:00");
