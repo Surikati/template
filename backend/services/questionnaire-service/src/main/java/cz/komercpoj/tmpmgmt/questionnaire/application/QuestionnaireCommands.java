@@ -27,6 +27,8 @@ public final class QuestionnaireCommands {
 
     public record ReplaceStructure(UUID questionnaireId, String name, List<SectionInput> sections) {}
 
+    public record PublishQuestionnaireVersion(UUID questionnaireId, UUID publishedBy) {}
+
     public record StartSession(UUID questionnaireId, UUID startedBy) {}
 
     public record SubmitAnswers(UUID sessionId, Map<String, Object> answers) {}

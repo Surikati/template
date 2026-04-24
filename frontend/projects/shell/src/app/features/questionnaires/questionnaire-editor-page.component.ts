@@ -21,12 +21,14 @@ import { DropdownModule } from 'primeng/dropdown';
 import { InputTextModule } from 'primeng/inputtext';
 import { InputTextareaModule } from 'primeng/inputtextarea';
 import { MessageService } from 'primeng/api';
+import { DatePipe } from '@angular/common';
 
 import {
   QuestionInputDto,
   QuestionType,
   QuestionnaireApiService,
   QuestionnaireResponse,
+  QuestionnaireVersionResponse,
   SectionInputDto,
 } from '@tmpmgmt/api-client';
 import { ProblemDetail } from '@tmpmgmt/core';
@@ -65,6 +67,7 @@ const QUESTION_TYPES: { label: string; value: QuestionType }[] = [
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     RouterLink,
+    DatePipe,
     FormsModule,
     CdkDropList,
     CdkDrag,
@@ -98,6 +101,13 @@ const QUESTION_TYPES: { label: string; value: QuestionType }[] = [
               icon="pi pi-play"
               severity="secondary"
               [routerLink]="['/questionnaires', q.id, 'run']"
+            />
+            <p-button
+              label="Publikovat verzi"
+              icon="pi pi-upload"
+              severity="secondary"
+              [loading]="publishing()"
+              (onClick)="publishVersion()"
             />
           }
           <p-button
@@ -247,6 +257,37 @@ const QUESTION_TYPES: { label: string; value: QuestionType }[] = [
           severity="secondary"
           (onClick)="addSection()"
         />
+
+        @if (questionnaire(); as q) {
+          <section class="versions">
+            <h2>Publikované verze</h2>
+            @if (versions(); as list) {
+              @if (list.length === 0) {
+                <p class="muted">Zatím žádná verze. Klikněte „Publikovat verzi" pro zmrazení aktuální struktury.</p>
+              } @else {
+                <ul>
+                  @for (v of list; track v.id) {
+                    <li class="version-row">
+                      <div>
+                        <strong>v{{ v.versionNumber }}</strong>
+                        — {{ v.publishedAt | date: 'medium' }}
+                      </div>
+                      <p-button
+                        label="Spustit tuto verzi"
+                        icon="pi pi-play"
+                        [text]="true"
+                        size="small"
+                        severity="secondary"
+                        [routerLink]="['/questionnaires', q.id, 'run']"
+                        [queryParams]="{ versionNumber: v.versionNumber }"
+                      />
+                    </li>
+                  }
+                </ul>
+              }
+            }
+          </section>
+        }
       </div>
     } @else {
       <p>Načítám…</p>
@@ -280,6 +321,12 @@ const QUESTION_TYPES: { label: string; value: QuestionType }[] = [
       .cdk-drag-preview { box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15); border-radius: 6px; }
       .cdk-drag-placeholder { opacity: 0.3; }
       code { background: #f4f4f5; padding: 0 0.25rem; border-radius: 3px; font-family: ui-monospace, SFMono-Regular, Consolas, monospace; }
+      .versions { margin-top: 1.5rem; }
+      .versions h2 { font-size: 1.1rem; margin: 0 0 0.5rem; }
+      .versions ul { list-style: none; padding: 0; margin: 0; }
+      .versions li { padding: 0.5rem 0; border-bottom: 1px solid #f4f4f5; }
+      .version-row { display: flex; justify-content: space-between; align-items: center; gap: 1rem; }
+      .muted { color: #71717a; }
     `,
   ],
 })
@@ -303,6 +350,8 @@ export class QuestionnaireEditorPageComponent {
   protected readonly name = signal('');
   protected readonly sections = signal<SectionDraft[]>([]);
   protected readonly saving = signal(false);
+  protected readonly publishing = signal(false);
+  protected readonly versions = signal<QuestionnaireVersionResponse[] | undefined>(undefined);
 
   protected readonly questionTypes = QUESTION_TYPES;
 
@@ -317,6 +366,7 @@ export class QuestionnaireEditorPageComponent {
       const id = this.id();
       if (id) {
         this.api.get(id).subscribe((q) => this.applyLoaded(q));
+        this.api.listVersions(id).subscribe((vs) => this.versions.set(vs));
         return;
       }
       // New mode — if a questionnaire already exists for this template+version, redirect to its editor
@@ -424,6 +474,31 @@ export class QuestionnaireEditorPageComponent {
 
   protected needsOptions(type: QuestionType): boolean {
     return type === 'SELECT' || type === 'MULTISELECT';
+  }
+
+  protected publishVersion(): void {
+    const q = this.questionnaire();
+    if (!q || this.publishing()) return;
+    this.publishing.set(true);
+    this.api.publishVersion(q.id).subscribe({
+      next: (v) => {
+        this.publishing.set(false);
+        this.messages.add({
+          severity: 'success',
+          summary: 'Verze publikována',
+          detail: `v${v.versionNumber}`,
+        });
+        this.api.listVersions(q.id).subscribe((list) => this.versions.set(list));
+      },
+      error: (err: ProblemDetail) => {
+        this.publishing.set(false);
+        this.messages.add({
+          severity: 'error',
+          summary: 'Publikace selhala',
+          detail: err.detail ?? err.title,
+        });
+      },
+    });
   }
 
   protected save(): void {

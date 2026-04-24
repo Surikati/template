@@ -8,6 +8,7 @@ import {
   EvaluateRulesRequest,
   EvaluateRulesResponse,
   QuestionnaireResponse,
+  QuestionnaireVersionResponse,
   ReplaceStructureRequest,
   SessionResponse,
   StartSessionRequest,
@@ -51,6 +52,20 @@ export class QuestionnaireApiService {
     req: ReplaceStructureRequest,
   ): Observable<QuestionnaireResponse> {
     return this.http.put<QuestionnaireResponse>(`${this.base}/${id}/structure`, req);
+  }
+
+  publishVersion(id: string): Observable<QuestionnaireVersionResponse> {
+    return this.http.post<QuestionnaireVersionResponse>(`${this.base}/${id}/versions`, {});
+  }
+
+  listVersions(id: string): Observable<QuestionnaireVersionResponse[]> {
+    return this.http.get<QuestionnaireVersionResponse[]>(`${this.base}/${id}/versions`);
+  }
+
+  getVersion(id: string, versionNumber: number): Observable<QuestionnaireVersionResponse> {
+    return this.http.get<QuestionnaireVersionResponse>(
+      `${this.base}/${id}/versions/${versionNumber}`,
+    );
   }
 
   getSession(id: string): Observable<SessionResponse> {

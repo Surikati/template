@@ -43,6 +43,17 @@ export interface QuestionnaireResponse {
   updatedAt: string;
 }
 
+export interface QuestionnaireVersionResponse {
+  id: string;
+  questionnaireId: string;
+  versionNumber: number;
+  name: string;
+  /** Frozen sections+questions snapshot — same shape as QuestionnaireResponse.sections. */
+  structure: SectionResponse[];
+  publishedAt: string;
+  publishedBy: string;
+}
+
 export interface QuestionInputDto {
   ordinal: number;
   variablePath: string;

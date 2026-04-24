@@ -20,6 +20,7 @@ import {
   QuestionnaireApiService,
   QuestionnaireResponse,
   RuleInput,
+  SectionResponse,
   SessionResponse,
 } from '@tmpmgmt/api-client';
 import { ProblemDetail } from '@tmpmgmt/core';
@@ -151,6 +152,9 @@ export class QuestionnaireRunnerPageComponent {
   private readonly messages = inject(MessageService);
 
   readonly id = input.required<string>();
+  /** Optional query param — if present, runner uses the immutable version snapshot instead
+   *  of the current draft. Compliance flows should always pass a versionNumber. */
+  readonly versionNumber = input<string | number>();
 
   protected readonly questionnaire = signal<QuestionnaireResponse | null>(null);
   protected readonly session = signal<SessionResponse | null>(null);
@@ -235,21 +239,48 @@ export class QuestionnaireRunnerPageComponent {
     this.state.set('loading');
     this.saveIndicator.set(null);
     this.visibility.set({});
-    this.api.get(id).subscribe({
-      next: (q) => {
-        this.questionnaire.set(q);
-        this.api.startSession({ questionnaireId: q.id }).subscribe({
-          next: (s) => {
-            this.session.set(s);
-            this.state.set('in-progress');
-            // Seed visibility with whatever the session already holds (e.g. resumed sessions).
-            this.refreshVisibility((s.answers as Record<string, unknown>) ?? {});
-          },
-          error: (err: ProblemDetail) => this.failWith(err),
-        });
+
+    const ver = this.versionNumberInt();
+    if (ver > 0) {
+      // Versioned mode: parent for templateId/timestamps + snapshot for structure.
+      this.api.get(id).subscribe({
+        next: (root) => {
+          this.api.getVersion(id, ver).subscribe({
+            next: (v) => {
+              this.questionnaire.set({ ...root, name: v.name, sections: v.structure });
+              this.startSession(id);
+            },
+            error: (err: ProblemDetail) => this.failWith(err),
+          });
+        },
+        error: (err: ProblemDetail) => this.failWith(err),
+      });
+    } else {
+      this.api.get(id).subscribe({
+        next: (q) => {
+          this.questionnaire.set(q);
+          this.startSession(id);
+        },
+        error: (err: ProblemDetail) => this.failWith(err),
+      });
+    }
+  }
+
+  private startSession(questionnaireId: string): void {
+    this.api.startSession({ questionnaireId }).subscribe({
+      next: (s) => {
+        this.session.set(s);
+        this.state.set('in-progress');
+        this.refreshVisibility((s.answers as Record<string, unknown>) ?? {});
       },
       error: (err: ProblemDetail) => this.failWith(err),
     });
+  }
+
+  private versionNumberInt(): number {
+    const v = this.versionNumber();
+    if (v === undefined) return 0;
+    return typeof v === 'string' ? parseInt(v, 10) : v;
   }
 
   private refreshVisibility(context: Record<string, unknown>): void {

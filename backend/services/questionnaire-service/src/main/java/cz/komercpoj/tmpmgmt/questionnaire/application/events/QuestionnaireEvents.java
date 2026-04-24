@@ -13,6 +13,7 @@ public final class QuestionnaireEvents {
 
     public static final String TYPE_CREATED = "created";
     public static final String TYPE_UPDATED = "updated";
+    public static final String TYPE_VERSION_PUBLISHED = "version.published";
     public static final String TYPE_SESSION_STARTED = "started";
     public static final String TYPE_SESSION_COMPLETED = "completed";
 
@@ -26,6 +27,13 @@ public final class QuestionnaireEvents {
 
     public record QuestionnaireUpdated(
             UUID questionnaireId, int sectionCount, Instant occurredAt) {}
+
+    public record QuestionnaireVersionPublished(
+            UUID questionnaireId,
+            UUID versionId,
+            int versionNumber,
+            UUID publishedBy,
+            Instant occurredAt) {}
 
     public record SessionStarted(
             UUID sessionId, UUID questionnaireId, UUID startedBy, Instant occurredAt) {}

@@ -3,16 +3,20 @@ package cz.komercpoj.tmpmgmt.questionnaire.api;
 import cz.komercpoj.tmpmgmt.questionnaire.api.dto.CreateQuestionnaireRequest;
 import cz.komercpoj.tmpmgmt.questionnaire.api.dto.QuestionInputDto;
 import cz.komercpoj.tmpmgmt.questionnaire.api.dto.QuestionnaireResponse;
+import cz.komercpoj.tmpmgmt.questionnaire.api.dto.QuestionnaireVersionResponse;
 import cz.komercpoj.tmpmgmt.questionnaire.api.dto.ReplaceStructureRequest;
 import cz.komercpoj.tmpmgmt.questionnaire.api.dto.SectionInputDto;
 import cz.komercpoj.tmpmgmt.questionnaire.application.QuestionnaireCommands;
 import cz.komercpoj.tmpmgmt.questionnaire.application.QuestionnaireService;
+import cz.komercpoj.tmpmgmt.questionnaire.persistence.QuestionnaireVersionEntity;
 import jakarta.validation.Valid;
 import java.net.URI;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -59,6 +63,39 @@ public class QuestionnaireController {
         var updated = service.replaceStructure(new QuestionnaireCommands.ReplaceStructure(
                 id, req.name(), toSectionInputs(req.sections())));
         return mapper.toResponse(updated);
+    }
+
+    @PostMapping("/{id}/versions")
+    @PreAuthorize("hasAnyRole('ADMIN','TEMPLATE_EDITOR')")
+    public ResponseEntity<QuestionnaireVersionResponse> publishVersion(
+            @PathVariable UUID id, @AuthenticationPrincipal Jwt jwt) {
+        var v = service.publishVersion(new QuestionnaireCommands.PublishQuestionnaireVersion(
+                id, UUID.fromString(jwt.getSubject())));
+        return ResponseEntity.created(URI.create(
+                        "/api/v1/questionnaires/" + id + "/versions/" + v.getVersionNumber()))
+                .body(toResponse(v));
+    }
+
+    @GetMapping("/{id}/versions")
+    public List<QuestionnaireVersionResponse> listVersions(@PathVariable UUID id) {
+        return service.listVersions(id).stream().map(QuestionnaireController::toResponse).toList();
+    }
+
+    @GetMapping("/{id}/versions/{versionNumber}")
+    public QuestionnaireVersionResponse getVersion(
+            @PathVariable UUID id, @PathVariable int versionNumber) {
+        return toResponse(service.getVersion(id, versionNumber));
+    }
+
+    private static QuestionnaireVersionResponse toResponse(QuestionnaireVersionEntity v) {
+        return new QuestionnaireVersionResponse(
+                v.getId(),
+                v.getQuestionnaireId(),
+                v.getVersionNumber(),
+                v.getNameSnapshot(),
+                v.getStructureSnapshot(),
+                v.getPublishedAt(),
+                v.getPublishedBy());
     }
 
     private List<QuestionnaireCommands.SectionInput> toSectionInputs(List<SectionInputDto> inputs) {

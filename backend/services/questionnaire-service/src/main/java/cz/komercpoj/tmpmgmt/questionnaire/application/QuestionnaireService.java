@@ -1,10 +1,14 @@
 package cz.komercpoj.tmpmgmt.questionnaire.application;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import cz.komercpoj.tmpmgmt.common.ConflictException;
 import cz.komercpoj.tmpmgmt.common.NotFoundException;
 import cz.komercpoj.tmpmgmt.outbox.OutboxWriter;
 import cz.komercpoj.tmpmgmt.questionnaire.application.QuestionnaireCommands.CreateQuestionnaire;
+import cz.komercpoj.tmpmgmt.questionnaire.application.QuestionnaireCommands.PublishQuestionnaireVersion;
 import cz.komercpoj.tmpmgmt.questionnaire.application.QuestionnaireCommands.QuestionInput;
 import cz.komercpoj.tmpmgmt.questionnaire.application.QuestionnaireCommands.ReplaceStructure;
 import cz.komercpoj.tmpmgmt.questionnaire.application.QuestionnaireCommands.SectionInput;
@@ -13,6 +17,8 @@ import cz.komercpoj.tmpmgmt.questionnaire.persistence.QuestionnaireEntity;
 import cz.komercpoj.tmpmgmt.questionnaire.persistence.QuestionnaireQuestionEntity;
 import cz.komercpoj.tmpmgmt.questionnaire.persistence.QuestionnaireRepository;
 import cz.komercpoj.tmpmgmt.questionnaire.persistence.QuestionnaireSectionEntity;
+import cz.komercpoj.tmpmgmt.questionnaire.persistence.QuestionnaireVersionEntity;
+import cz.komercpoj.tmpmgmt.questionnaire.persistence.QuestionnaireVersionRepository;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -25,12 +31,17 @@ import org.springframework.transaction.annotation.Transactional;
 public class QuestionnaireService {
 
     private final QuestionnaireRepository repo;
+    private final QuestionnaireVersionRepository versionRepo;
     private final OutboxWriter outbox;
     private final ObjectMapper mapper;
 
     public QuestionnaireService(
-            QuestionnaireRepository repo, OutboxWriter outbox, ObjectMapper mapper) {
+            QuestionnaireRepository repo,
+            QuestionnaireVersionRepository versionRepo,
+            OutboxWriter outbox,
+            ObjectMapper mapper) {
         this.repo = repo;
+        this.versionRepo = versionRepo;
         this.outbox = outbox;
         this.mapper = mapper;
     }
@@ -90,6 +101,48 @@ public class QuestionnaireService {
         return q;
     }
 
+    /**
+     * Snapshots the current draft structure into an immutable {@link QuestionnaireVersionEntity}.
+     * Subsequent {@link #replaceStructure} edits do not affect already-published versions —
+     * sessions started against a specific version see the structure as it was at publish time.
+     */
+    @Transactional
+    public QuestionnaireVersionEntity publishVersion(PublishQuestionnaireVersion cmd) {
+        QuestionnaireEntity q = getById(cmd.questionnaireId());
+        int nextVersion = versionRepo.findMaxVersionNumber(q.getId()) + 1;
+        UUID versionId = UUID.randomUUID();
+        QuestionnaireVersionEntity v = QuestionnaireVersionEntity.publish(
+                versionId,
+                q.getId(),
+                nextVersion,
+                q.getName(),
+                snapshotStructure(q),
+                cmd.publishedBy());
+        versionRepo.save(v);
+
+        outbox.stage(
+                QuestionnaireEvents.AGGREGATE_TYPE,
+                q.getId().toString(),
+                QuestionnaireEvents.TYPE_VERSION_PUBLISHED,
+                new QuestionnaireEvents.QuestionnaireVersionPublished(
+                        q.getId(), versionId, nextVersion, cmd.publishedBy(), Instant.now()));
+        return v;
+    }
+
+    @Transactional(readOnly = true)
+    public List<QuestionnaireVersionEntity> listVersions(UUID questionnaireId) {
+        getById(questionnaireId); // 404 vs empty list
+        return versionRepo.findByQuestionnaireIdOrderByVersionNumberDesc(questionnaireId);
+    }
+
+    @Transactional(readOnly = true)
+    public QuestionnaireVersionEntity getVersion(UUID questionnaireId, int versionNumber) {
+        return versionRepo.findByQuestionnaireIdAndVersionNumber(questionnaireId, versionNumber)
+                .orElseThrow(() -> new NotFoundException(
+                        "questionnaire.version_not_found",
+                        "No version " + versionNumber + " for questionnaire " + questionnaireId));
+    }
+
     private List<QuestionnaireSectionEntity> toSectionEntities(List<SectionInput> inputs) {
         List<QuestionnaireSectionEntity> out = new ArrayList<>();
         for (SectionInput si : inputs) {
@@ -109,6 +162,37 @@ public class QuestionnaireService {
             out.add(s);
         }
         return out;
+    }
+
+    /**
+     * Builds a JSON array shaped like {@code QuestionnaireResponse.sections} — embedded so the
+     * snapshot round-trips through the API mapper without any extra transformation step.
+     */
+    private JsonNode snapshotStructure(QuestionnaireEntity q) {
+        ArrayNode sections = mapper.createArrayNode();
+        for (QuestionnaireSectionEntity sec : q.getSections()) {
+            ObjectNode s = mapper.createObjectNode();
+            s.put("id", sec.getId().toString());
+            s.put("ordinal", sec.getOrdinal());
+            s.put("title", sec.getTitle());
+            s.put("visibilityRule", sec.getVisibilityRule());
+            ArrayNode questions = mapper.createArrayNode();
+            for (QuestionnaireQuestionEntity qq : sec.getQuestions()) {
+                ObjectNode qn = mapper.createObjectNode();
+                qn.put("id", qq.getId().toString());
+                qn.put("ordinal", qq.getOrdinal());
+                qn.put("variablePath", qq.getVariablePath());
+                qn.put("label", qq.getLabel());
+                qn.put("questionType", qq.getQuestionType().name());
+                qn.set("validation", qq.getValidation());
+                qn.put("visibilityRule", qq.getVisibilityRule());
+                qn.set("options", qq.getOptions());
+                questions.add(qn);
+            }
+            s.set("questions", questions);
+            sections.add(s);
+        }
+        return sections;
     }
 
     private NotFoundException notFound(UUID id) {
