@@ -9,6 +9,7 @@ import cz.komercpoj.tmpmgmt.template.application.TemplateCommands.Archive;
 import cz.komercpoj.tmpmgmt.template.application.TemplateCommands.CreateTemplate;
 import cz.komercpoj.tmpmgmt.template.application.TemplateCommands.PublishVersion;
 import cz.komercpoj.tmpmgmt.template.application.TemplateCommands.SaveDraft;
+import cz.komercpoj.tmpmgmt.template.application.TemplateCommands.UpdateMetadata;
 import cz.komercpoj.tmpmgmt.template.application.events.TemplateEvents;
 import cz.komercpoj.tmpmgmt.template.domain.TemplateStatus;
 import cz.komercpoj.tmpmgmt.template.persistence.TemplateDraftEntity;
@@ -108,6 +109,34 @@ public class TemplateService {
         // Ensure the template exists (404 vs empty list).
         getById(templateId);
         return versions.findByTemplateIdOrderByVersionNumberDesc(templateId);
+    }
+
+    @Transactional
+    public TemplateEntity updateMetadata(UpdateMetadata cmd) {
+        TemplateEntity template = getById(cmd.templateId());
+        if (template.getStatus() == TemplateStatus.ARCHIVED) {
+            throw new ConflictException(
+                    "template.archived", "Cannot edit archived template " + template.getId());
+        }
+        template.setName(cmd.name());
+        template.setDescription(cmd.description());
+        template.setCategory(cmd.category());
+        template.setTags(cmd.tags() == null ? new String[0] : cmd.tags().toArray(new String[0]));
+        template.touchUpdated();
+
+        outbox.stage(
+                TemplateEvents.AGGREGATE_TYPE,
+                template.getId().toString(),
+                TemplateEvents.TYPE_METADATA_UPDATED,
+                new TemplateEvents.TemplateMetadataUpdated(
+                        template.getId(),
+                        template.getName(),
+                        template.getDescription(),
+                        template.getCategory(),
+                        List.of(template.getTags()),
+                        cmd.actorUserId(),
+                        Instant.now()));
+        return template;
     }
 
     @Transactional

@@ -90,6 +90,34 @@ public class ClauseService {
     }
 
     @Transactional
+    public ClauseEntity updateMetadata(ClauseCommands.UpdateMetadata cmd) {
+        ClauseEntity clause = getById(cmd.clauseId());
+        if (clause.getStatus() == ClauseStatus.ARCHIVED) {
+            throw new ConflictException(
+                    "clause.archived", "Cannot edit archived clause " + clause.getId());
+        }
+        clause.setName(cmd.name());
+        clause.setDescription(cmd.description());
+        clause.setCategory(cmd.category());
+        clause.setTags(cmd.tags() == null ? new String[0] : cmd.tags().toArray(new String[0]));
+        clause.touchUpdated();
+
+        outbox.stage(
+                ClauseEvents.AGGREGATE_TYPE,
+                clause.getId().toString(),
+                ClauseEvents.TYPE_METADATA_UPDATED,
+                new ClauseEvents.ClauseMetadataUpdated(
+                        clause.getId(),
+                        clause.getName(),
+                        clause.getDescription(),
+                        clause.getCategory(),
+                        List.of(clause.getTags()),
+                        cmd.actorUserId(),
+                        Instant.now()));
+        return clause;
+    }
+
+    @Transactional
     public ClauseVersionEntity publishVersion(PublishVersion cmd) {
         ClauseEntity clause = getById(cmd.clauseId());
         if (clause.getStatus() == ClauseStatus.ARCHIVED) {

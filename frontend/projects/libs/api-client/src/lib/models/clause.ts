@@ -31,6 +31,13 @@ export interface CreateClauseRequest {
   category?: string;
 }
 
+export interface UpdateClauseMetadataRequest {
+  name: string;
+  description?: string;
+  category?: string;
+  tags?: string[];
+}
+
 export interface PublishClauseVersionRequest {
   content: unknown;
   changeNote?: string;

@@ -17,6 +17,7 @@ public final class TemplateEvents {
     public static final String AGGREGATE_TYPE = "template";
 
     public static final String TYPE_CREATED = "created";
+    public static final String TYPE_METADATA_UPDATED = "metadata.updated";
     public static final String TYPE_DRAFT_SAVED = "draft.saved";
     public static final String TYPE_VERSION_PUBLISHED = "version.published";
     public static final String TYPE_ARCHIVED = "archived";
@@ -29,6 +30,19 @@ public final class TemplateEvents {
             String category,
             List<String> tags,
             UUID ownerUserId,
+            Instant occurredAt) {}
+
+    /**
+     * Emitted when name/description/category/tags change. Slug stays out — it's part of the
+     * template's identity and is intentionally immutable post-creation.
+     */
+    public record TemplateMetadataUpdated(
+            UUID templateId,
+            String name,
+            String description,
+            String category,
+            List<String> tags,
+            UUID actorUserId,
             Instant occurredAt) {}
 
     public record TemplateDraftSaved(

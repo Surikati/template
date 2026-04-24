@@ -15,6 +15,7 @@ public final class ClauseEvents {
     public static final String AGGREGATE_TYPE = "clause";
 
     public static final String TYPE_CREATED = "created";
+    public static final String TYPE_METADATA_UPDATED = "metadata.updated";
     public static final String TYPE_VERSION_PUBLISHED = "version.published";
     public static final String TYPE_ARCHIVED = "archived";
 
@@ -26,6 +27,15 @@ public final class ClauseEvents {
             String category,
             List<String> tags,
             UUID ownerUserId,
+            Instant occurredAt) {}
+
+    public record ClauseMetadataUpdated(
+            UUID clauseId,
+            String name,
+            String description,
+            String category,
+            List<String> tags,
+            UUID actorUserId,
             Instant occurredAt) {}
 
     public record ClauseVersionPublished(

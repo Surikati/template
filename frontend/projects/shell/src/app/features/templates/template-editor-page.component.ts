@@ -38,6 +38,7 @@ import {
 
 import { PublishVersionDialogComponent } from './publish-version-dialog.component';
 import { GenerateDocumentDialogComponent } from './generate-document-dialog.component';
+import { EditMetadataDialogComponent } from '../../shared/edit-metadata-dialog.component';
 
 type SaveState = 'idle' | 'saving' | 'saved' | 'error';
 
@@ -52,12 +53,23 @@ type SaveState = 'idle' | 'saving' | 'saved' | 'error';
     TemplateEditorComponent,
     PublishVersionDialogComponent,
     GenerateDocumentDialogComponent,
+    EditMetadataDialogComponent,
   ],
   template: `
     @if (template(); as tpl) {
       <div class="page-head">
         <div>
-          <h1>{{ tpl.name }}</h1>
+          <h1>
+            {{ tpl.name }}
+            <p-button
+              icon="pi pi-pencil"
+              [text]="true"
+              severity="secondary"
+              size="small"
+              (onClick)="metadataDialogVisible.set(true)"
+              ariaLabel="Upravit metadata"
+            />
+          </h1>
           <div class="meta">
             {{ tpl.slug }} · {{ tpl.category || '—' }}
             <span class="save-state" [class.saving]="saveState() === 'saving'"
@@ -136,6 +148,20 @@ type SaveState = 'idle' | 'saving' | 'saved' | 'error';
         [templateId]="tpl.id"
         [versions]="versions() ?? []"
       />
+
+      <tm-edit-metadata-dialog
+        [visible]="metadataDialogVisible()"
+        (visibleChange)="metadataDialogVisible.set($event)"
+        header="Upravit šablonu"
+        [initial]="{
+          name: tpl.name,
+          description: tpl.description,
+          category: tpl.category,
+          tags: tpl.tags
+        }"
+        [updater]="updateMetadata"
+        (saved)="onMetadataSaved($any($event))"
+      />
     } @else {
       <p>Načítám šablonu…</p>
     }
@@ -174,6 +200,15 @@ export class TemplateEditorPageComponent implements OnDestroy {
   protected readonly saveState = signal<SaveState>('idle');
   protected readonly publishDialogVisible = signal(false);
   protected readonly generateDialogVisible = signal(false);
+  protected readonly metadataDialogVisible = signal(false);
+
+  /** Bound to <tm-edit-metadata-dialog> [updater]. Arrow form keeps `this` lexical. */
+  protected readonly updateMetadata = (payload: {
+    name: string;
+    description?: string;
+    category?: string;
+    tags?: string[];
+  }) => this.api.updateMetadata(this.id(), payload);
 
   protected readonly initialContent = computed<TemplateDocument | null>(() => {
     const d = this.draft();
@@ -227,6 +262,15 @@ export class TemplateEditorPageComponent implements OnDestroy {
 
   protected onContentChanged(content: TemplateDocument): void {
     this.changes$.next(content);
+  }
+
+  protected onMetadataSaved(updated: TemplateResponse): void {
+    this.template.set(updated);
+    this.messages.add({
+      severity: 'success',
+      summary: 'Metadata uložena',
+      detail: updated.name,
+    });
   }
 
   protected onPublished(version: TemplateVersionResponse): void {

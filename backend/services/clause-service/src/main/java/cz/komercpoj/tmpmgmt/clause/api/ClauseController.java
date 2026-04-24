@@ -4,6 +4,7 @@ import cz.komercpoj.tmpmgmt.clause.api.dto.ClauseResponse;
 import cz.komercpoj.tmpmgmt.clause.api.dto.ClauseVersionResponse;
 import cz.komercpoj.tmpmgmt.clause.api.dto.CreateClauseRequest;
 import cz.komercpoj.tmpmgmt.clause.api.dto.PublishClauseVersionRequest;
+import cz.komercpoj.tmpmgmt.clause.api.dto.UpdateMetadataRequest;
 import cz.komercpoj.tmpmgmt.clause.application.ClauseCommands;
 import cz.komercpoj.tmpmgmt.clause.application.ClauseService;
 import jakarta.validation.Valid;
@@ -47,6 +48,17 @@ public class ClauseController {
                 req.slug(), req.name(), req.description(), req.category(), currentUserId(jwt)));
         return ResponseEntity.created(URI.create("/api/v1/clauses/" + created.getId()))
                 .body(mapper.toResponse(created));
+    }
+
+    @PutMapping("/{id}/metadata")
+    @PreAuthorize("hasAnyRole('ADMIN','CLAUSE_EDITOR')")
+    public ClauseResponse updateMetadata(
+            @PathVariable UUID id,
+            @Valid @RequestBody UpdateMetadataRequest req,
+            @AuthenticationPrincipal Jwt jwt) {
+        var updated = service.updateMetadata(new ClauseCommands.UpdateMetadata(
+                id, req.name(), req.description(), req.category(), req.tags(), currentUserId(jwt)));
+        return mapper.toResponse(updated);
     }
 
     @GetMapping("/{id}/versions")

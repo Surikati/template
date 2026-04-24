@@ -8,6 +8,7 @@ import {
   ClauseVersionResponse,
   CreateClauseRequest,
   PublishClauseVersionRequest,
+  UpdateClauseMetadataRequest,
 } from '../models/clause';
 
 @Injectable({ providedIn: 'root' })
@@ -29,6 +30,10 @@ export class ClauseApiService {
 
   create(req: CreateClauseRequest): Observable<ClauseResponse> {
     return this.http.post<ClauseResponse>(this.base, req);
+  }
+
+  updateMetadata(id: string, req: UpdateClauseMetadataRequest): Observable<ClauseResponse> {
+    return this.http.put<ClauseResponse>(`${this.base}/${id}/metadata`, req);
   }
 
   listVersions(clauseId: string): Observable<ClauseVersionResponse[]> {

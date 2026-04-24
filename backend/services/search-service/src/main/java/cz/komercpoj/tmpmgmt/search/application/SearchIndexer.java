@@ -68,6 +68,7 @@ public class SearchIndexer {
         try {
             switch (eventType) {
                 case "created" -> upsertFromCreated(index, id, payload);
+                case "metadata.updated" -> applyMetadataUpdate(index, id, payload);
                 case "version.published" -> touchUpdated(index, id, payload);
                 case "archived" -> setStatus(index, id, "ARCHIVED", payload);
                 default -> log.debug("Ignoring event type '{}' for {}", eventType, index);
@@ -75,6 +76,20 @@ public class SearchIndexer {
         } catch (Exception ex) {
             log.error("Failed to index {} event {} for id {}", index, eventType, id, ex);
         }
+    }
+
+    private void applyMetadataUpdate(String index, UUID id, JsonNode payload) throws Exception {
+        Map<String, Object> partial = new java.util.HashMap<>();
+        partial.put("name", textOrNull(payload, "name"));
+        partial.put("description", textOrNull(payload, "description"));
+        partial.put("category", textOrNull(payload, "category"));
+        partial.put("tags", readStringList(payload, "tags"));
+        partial.put("updatedAt", occurredAt(payload));
+        client.update(UpdateRequest.of(u -> u
+                .index(index)
+                .id(id.toString())
+                .doc(partial)
+                .docAsUpsert(false)), Map.class);
     }
 
     private void upsertFromCreated(String index, UUID id, JsonNode payload) throws Exception {

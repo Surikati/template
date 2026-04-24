@@ -10,6 +10,7 @@ import {
   TemplateResponse,
   TemplateVersionResponse,
   UpdateDraftRequest,
+  UpdateMetadataRequest,
 } from '../models/template';
 
 @Injectable({ providedIn: 'root' })
@@ -31,6 +32,10 @@ export class TemplateApiService {
 
   create(req: CreateTemplateRequest): Observable<TemplateResponse> {
     return this.http.post<TemplateResponse>(this.base, req);
+  }
+
+  updateMetadata(id: string, req: UpdateMetadataRequest): Observable<TemplateResponse> {
+    return this.http.put<TemplateResponse>(`${this.base}/${id}/metadata`, req);
   }
 
   getDraft(templateId: string): Observable<TemplateDraftResponse> {

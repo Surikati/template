@@ -6,6 +6,7 @@ import cz.komercpoj.tmpmgmt.template.api.dto.TemplateDraftResponse;
 import cz.komercpoj.tmpmgmt.template.api.dto.TemplateResponse;
 import cz.komercpoj.tmpmgmt.template.api.dto.TemplateVersionResponse;
 import cz.komercpoj.tmpmgmt.template.api.dto.UpdateDraftRequest;
+import cz.komercpoj.tmpmgmt.template.api.dto.UpdateMetadataRequest;
 import cz.komercpoj.tmpmgmt.template.application.TemplateCommands;
 import cz.komercpoj.tmpmgmt.template.application.TemplateService;
 import jakarta.validation.Valid;
@@ -49,6 +50,17 @@ public class TemplateController {
                 req.slug(), req.name(), req.description(), req.category(), userId));
         return ResponseEntity.created(URI.create("/api/v1/templates/" + created.getId()))
                 .body(mapper.toResponse(created));
+    }
+
+    @PutMapping("/{id}/metadata")
+    @PreAuthorize("hasAnyRole('ADMIN','TEMPLATE_EDITOR')")
+    public TemplateResponse updateMetadata(
+            @PathVariable UUID id,
+            @Valid @RequestBody UpdateMetadataRequest req,
+            @org.springframework.security.core.annotation.AuthenticationPrincipal Jwt jwt) {
+        var updated = service.updateMetadata(new TemplateCommands.UpdateMetadata(
+                id, req.name(), req.description(), req.category(), req.tags(), currentUserId(jwt)));
+        return mapper.toResponse(updated);
     }
 
     @GetMapping("/{id}/draft")

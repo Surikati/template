@@ -39,6 +39,13 @@ export interface CreateTemplateRequest {
   category?: string;
 }
 
+export interface UpdateMetadataRequest {
+  name: string;
+  description?: string;
+  category?: string;
+  tags?: string[];
+}
+
 export interface UpdateDraftRequest {
   content: unknown;
   variablesSchema: unknown;

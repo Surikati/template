@@ -23,6 +23,7 @@ import {
 } from '@tmpmgmt/template-editor';
 
 import { PublishClauseVersionDialogComponent } from './publish-clause-version-dialog.component';
+import { EditMetadataDialogComponent } from '../../shared/edit-metadata-dialog.component';
 
 /**
  * Clause editor — unlike templates, there is no server-side draft. The editor holds
@@ -40,12 +41,23 @@ import { PublishClauseVersionDialogComponent } from './publish-clause-version-di
     TagModule,
     TemplateEditorComponent,
     PublishClauseVersionDialogComponent,
+    EditMetadataDialogComponent,
   ],
   template: `
     @if (clause(); as c) {
       <div class="page-head">
         <div>
-          <h1>{{ c.name }}</h1>
+          <h1>
+            {{ c.name }}
+            <p-button
+              icon="pi pi-pencil"
+              [text]="true"
+              severity="secondary"
+              size="small"
+              (onClick)="metadataDialogVisible.set(true)"
+              ariaLabel="Upravit metadata"
+            />
+          </h1>
           <div class="meta">
             {{ c.slug }} · {{ c.category || '—' }}
             <p-tag
@@ -99,6 +111,20 @@ import { PublishClauseVersionDialogComponent } from './publish-clause-version-di
         [content]="fragmentContent()"
         (published)="onPublished($event)"
       />
+
+      <tm-edit-metadata-dialog
+        [visible]="metadataDialogVisible()"
+        (visibleChange)="metadataDialogVisible.set($event)"
+        header="Upravit doložku"
+        [initial]="{
+          name: c.name,
+          description: c.description,
+          category: c.category,
+          tags: c.tags
+        }"
+        [updater]="updateMetadata"
+        (saved)="onMetadataSaved($any($event))"
+      />
     } @else {
       <p>Načítám doložku…</p>
     }
@@ -129,6 +155,14 @@ export class ClauseEditorPageComponent {
   protected readonly initialEditorContent = signal<TemplateDocument | null>(null);
   protected readonly editorContent = signal<TemplateDocument | null>(null);
   protected readonly publishDialogVisible = signal(false);
+  protected readonly metadataDialogVisible = signal(false);
+
+  protected readonly updateMetadata = (payload: {
+    name: string;
+    description?: string;
+    category?: string;
+    tags?: string[];
+  }) => this.api.updateMetadata(this.id(), payload);
 
   /** Current editor state, re-rooted as 'fragment' for API transport. */
   protected readonly fragmentContent = computed<unknown>(() => {
@@ -153,6 +187,15 @@ export class ClauseEditorPageComponent {
       detail: `v${version.versionNumber}`,
     });
     this.loadVersions(this.id());
+  }
+
+  protected onMetadataSaved(updated: ClauseResponse): void {
+    this.clause.set(updated);
+    this.messages.add({
+      severity: 'success',
+      summary: 'Metadata uložena',
+      detail: updated.name,
+    });
   }
 
   private loadVersions(id: string): void {
