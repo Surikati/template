@@ -86,14 +86,22 @@ type RunState = 'loading' | 'in-progress' | 'completing' | 'assembling' | 'done'
           <i class="pi pi-check-circle"></i>
           <h2>Hotovo</h2>
           @if (assembled(); as a) {
-            <p class="muted">{{ a.filename }}</p>
+            <ul class="file-list">
+              @for (f of a.files; track f.format) {
+                <li>
+                  <span class="file-name">{{ f.filename }}</span>
+                  <p-button
+                    [label]="f.format"
+                    icon="pi pi-download"
+                    size="small"
+                    severity="secondary"
+                    [disabled]="!f.downloadUrl"
+                    (onClick)="downloadFile(f.downloadUrl)"
+                  />
+                </li>
+              }
+            </ul>
             <div class="actions">
-              <p-button
-                label="Stáhnout dokument"
-                icon="pi pi-download"
-                [disabled]="!a.downloadUrl"
-                (onClick)="download()"
-              />
               <p-button
                 label="Spustit znovu"
                 icon="pi pi-refresh"
@@ -128,6 +136,9 @@ type RunState = 'loading' | 'in-progress' | 'completing' | 'assembling' | 'done'
       .error i { font-size: 4rem; color: #dc2626; }
       .success h2, .error h2 { margin-top: 1rem; }
       .muted { color: #71717a; }
+      .file-list { list-style: none; padding: 0; margin: 1rem auto; max-width: 28rem; display: flex; flex-direction: column; gap: 0.5rem; }
+      .file-list li { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 0.5rem 0.75rem; background: #f9fafb; border: 1px solid #e4e4e7; border-radius: 4px; text-align: left; }
+      .file-name { font-size: 0.9rem; color: #27272a; word-break: break-all; }
       .actions { display: flex; gap: 0.5rem; justify-content: center; margin-top: 1.5rem; }
       a { color: #3730a3; text-decoration: none; }
       a:hover { text-decoration: underline; }
@@ -209,10 +220,9 @@ export class QuestionnaireRunnerPageComponent {
     });
   }
 
-  protected download(): void {
-    const a = this.assembled();
-    if (!a?.downloadUrl) return;
-    window.open(this.assembly.resolveDownloadUrl(a.downloadUrl), '_blank');
+  protected downloadFile(url: string | undefined): void {
+    if (!url) return;
+    window.open(this.assembly.resolveDownloadUrl(url), '_blank');
   }
 
   protected restart(): void {
@@ -274,7 +284,7 @@ export class QuestionnaireRunnerPageComponent {
         templateId: q.templateId,
         templateVersionNumber: q.templateVersionNumber,
         data: answers,
-        format: this.format,
+        formats: [this.format],
       })
       .subscribe({
         next: (res) => {

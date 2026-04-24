@@ -13,6 +13,7 @@ import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { DialogModule } from 'primeng/dialog';
 import { DropdownModule } from 'primeng/dropdown';
 import { InputTextareaModule } from 'primeng/inputtextarea';
+import { MultiSelectModule } from 'primeng/multiselect';
 import { ButtonModule } from 'primeng/button';
 import { MessageService } from 'primeng/api';
 
@@ -33,6 +34,7 @@ import { ProblemDetail } from '@tmpmgmt/core';
     DialogModule,
     DropdownModule,
     InputTextareaModule,
+    MultiSelectModule,
     ButtonModule,
   ],
   template: `
@@ -58,13 +60,14 @@ import { ProblemDetail } from '@tmpmgmt/core';
             />
           </label>
           <label>
-            <span>Formát</span>
-            <p-dropdown
-              formControlName="format"
+            <span>Formáty <em>(generuje vše najednou)</em></span>
+            <p-multiSelect
+              formControlName="formats"
               [options]="formatOptions"
               optionLabel="label"
               optionValue="value"
               appendTo="body"
+              display="chip"
             />
           </label>
           <label>
@@ -125,7 +128,21 @@ import { ProblemDetail } from '@tmpmgmt/core';
         <div class="success">
           <i class="pi pi-check-circle success-icon"></i>
           <h3>Dokument vygenerován</h3>
-          <p class="muted">{{ result()!.filename }}</p>
+          <ul class="file-list">
+            @for (f of result()!.files; track f.format) {
+              <li>
+                <span class="file-name">{{ f.filename }}</span>
+                <p-button
+                  [label]="f.format"
+                  icon="pi pi-download"
+                  size="small"
+                  severity="secondary"
+                  [disabled]="!f.downloadUrl"
+                  (onClick)="downloadFile(f.downloadUrl)"
+                />
+              </li>
+            }
+          </ul>
         </div>
 
         <ng-template pTemplate="footer">
@@ -134,12 +151,6 @@ import { ProblemDetail } from '@tmpmgmt/core';
             severity="secondary"
             [text]="true"
             (onClick)="close(false)"
-          />
-          <p-button
-            label="Stáhnout"
-            icon="pi pi-download"
-            [disabled]="!result()!.downloadUrl"
-            (onClick)="download()"
           />
         </ng-template>
       }
@@ -154,8 +165,11 @@ import { ProblemDetail } from '@tmpmgmt/core';
       .error { color: #dc2626; font-size: 0.8rem; }
       .success { text-align: center; padding: 1.5rem 0.5rem; }
       .success-icon { font-size: 3rem; color: #059669; margin-bottom: 0.75rem; }
-      .success h3 { margin: 0; }
+      .success h3 { margin: 0 0 1rem; }
       .muted { color: #71717a; margin-top: 0.25rem; }
+      .file-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.5rem; max-width: 28rem; margin-inline: auto; }
+      .file-list li { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 0.5rem 0.75rem; background: #f9fafb; border: 1px solid #e4e4e7; border-radius: 4px; }
+      .file-name { font-size: 0.9rem; color: #27272a; word-break: break-all; }
       .preview-section {
         margin-top: 1rem;
         border: 1px solid #e4e4e7;
@@ -214,7 +228,7 @@ export class GenerateDocumentDialogComponent {
 
   protected readonly form = this.fb.nonNullable.group({
     versionNumber: [0, Validators.required],
-    format: ['DOCX' as OutputFormat, Validators.required],
+    formats: [['DOCX'] as OutputFormat[], [Validators.required, Validators.minLength(1)]],
     dataJson: ['{\n  \n}', Validators.required],
   });
 
@@ -284,7 +298,7 @@ export class GenerateDocumentDialogComponent {
         templateId: this.templateId(),
         templateVersionNumber: raw.versionNumber,
         data,
-        format: raw.format,
+        formats: raw.formats,
       })
       .subscribe({
         next: (res) => {
@@ -302,11 +316,9 @@ export class GenerateDocumentDialogComponent {
       });
   }
 
-  protected download(): void {
-    const res = this.result();
-    if (!res?.downloadUrl) return;
-    const absolute = this.api.resolveDownloadUrl(res.downloadUrl);
-    window.open(absolute, '_blank');
+  protected downloadFile(url: string | undefined): void {
+    if (!url) return;
+    window.open(this.api.resolveDownloadUrl(url), '_blank');
   }
 
   protected close(next: boolean): void {

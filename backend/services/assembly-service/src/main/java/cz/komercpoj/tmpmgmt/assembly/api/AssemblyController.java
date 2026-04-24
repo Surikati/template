@@ -7,6 +7,7 @@ import cz.komercpoj.tmpmgmt.assembly.application.AssemblyService.AssemblyCommand
 import cz.komercpoj.tmpmgmt.assembly.domain.OutputFormat;
 import jakarta.validation.Valid;
 import java.net.URI;
+import java.util.List;
 import java.util.UUID;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -31,16 +32,14 @@ public class AssemblyController {
                 req.templateId(),
                 req.templateVersionNumber(),
                 req.data(),
-                req.formatOrDefault(),
+                req.formatsOrDefault(),
                 currentUserId(jwt)));
         var job = result.job();
+        var files = result.files().stream()
+                .map(f -> new AssembleResponse.AssembledFile(f.format(), f.filename(), f.downloadUrl()))
+                .toList();
         var body = new AssembleResponse(
-                job.getId(),
-                job.getState(),
-                result.documentId(),
-                result.filename(),
-                result.downloadUrl(),
-                job.getCompletedAt());
+                job.getId(), job.getState(), result.documentId(), files, job.getCompletedAt());
         return ResponseEntity.created(URI.create("/api/v1/assemblies/" + job.getId())).body(body);
     }
 
@@ -50,7 +49,7 @@ public class AssemblyController {
                 req.templateId(),
                 req.templateVersionNumber(),
                 req.data(),
-                OutputFormat.DOCX,
+                List.of(OutputFormat.DOCX),
                 currentUserId(jwt)));
     }
 
@@ -61,8 +60,7 @@ public class AssemblyController {
                 job.getId(),
                 job.getState(),
                 job.getResultDocumentId(),
-                null,
-                null,
+                List.of(),
                 job.getCompletedAt());
     }
 

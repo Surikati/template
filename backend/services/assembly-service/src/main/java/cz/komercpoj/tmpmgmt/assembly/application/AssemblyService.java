@@ -14,6 +14,7 @@ import cz.komercpoj.tmpmgmt.common.DomainException;
 import cz.komercpoj.tmpmgmt.common.NotFoundException;
 import cz.komercpoj.tmpmgmt.outbox.OutboxWriter;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
 import java.util.Map;
@@ -30,8 +31,8 @@ import org.springframework.transaction.annotation.Transactional;
  *   <li>Persist a job row (state=PENDING).
  *   <li>Fetch the immutable template version from template-service.
  *   <li>Resolve any {@code clauseRef} nodes by fetching referenced clause versions.
- *   <li>Call rendering-service with the composed AST + input data.
- *   <li>Upload rendered bytes to document-service (which persists them in MinIO).
+ *   <li>For each requested format, call rendering-service with the composed AST + input data.
+ *   <li>Upload all rendered bytes in one document-service call (single document, multi-file).
  *   <li>Update job to COMPLETED with resultDocumentId (or FAILED on error).
  *   <li>Emit outbox event so downstream (audit, notification) can react.
  * </ol>
@@ -95,12 +96,13 @@ public class AssemblyService {
     public AssemblyResult assemble(AssemblyCommand cmd) {
         UUID jobId = UUID.randomUUID();
         JsonNode inputDataJson = mapper.valueToTree(cmd.data());
+        String[] formatNames = cmd.formats().stream().map(Enum::name).toArray(String[]::new);
         AssemblyJobEntity job = AssemblyJobEntity.pending(
                 jobId,
                 cmd.templateId(),
                 cmd.templateVersionNumber(),
                 inputDataJson,
-                new String[] {cmd.format().name()},
+                formatNames,
                 cmd.requestedBy());
         jobs.save(job);
 
@@ -121,21 +123,24 @@ public class AssemblyService {
 
             job.markRendering();
 
-            var renderFormat = toRenderFormat(cmd.format());
-            var renderRequest = new RenderingServiceClient.RenderRequest(
-                    composedAst, cmd.data(), renderFormat);
-            var rendered = renderingClient.render(renderRequest);
+            // Render each requested format. AST and clause resolution are shared across formats —
+            // only the rendering call duplicates per format.
+            List<RenderedFormat> rendered = new ArrayList<>(cmd.formats().size());
+            for (OutputFormat fmt : cmd.formats()) {
+                var resp = renderingClient.render(new RenderingServiceClient.RenderRequest(
+                        composedAst, cmd.data(), toRenderFormat(fmt)));
+                rendered.add(new RenderedFormat(fmt, resp.filename(), resp.content()));
+            }
 
-            // Hand off to document-service for durable storage in MinIO.
-            var docRequest = new DocumentServiceClient.UploadDocumentRequest(
-                    cmd.templateId(),
-                    cmd.templateVersionNumber(),
-                    jobId,
-                    inputDataJson,
-                    List.of(new DocumentServiceClient.FileInputDto(
-                            toFileFormat(cmd.format()),
-                            Base64.getEncoder().encodeToString(rendered.content()))));
-            var docResponse = documentClient.upload(docRequest);
+            // Upload all formats as one document. document-service stores them as separate
+            // FileReference rows under a shared GeneratedDocument id.
+            List<DocumentServiceClient.FileInputDto> fileInputs = rendered.stream()
+                    .map(r -> new DocumentServiceClient.FileInputDto(
+                            toFileFormat(r.format()),
+                            Base64.getEncoder().encodeToString(r.bytes())))
+                    .toList();
+            var docResponse = documentClient.upload(new DocumentServiceClient.UploadDocumentRequest(
+                    cmd.templateId(), cmd.templateVersionNumber(), jobId, inputDataJson, fileInputs));
 
             job.markCompleted(docResponse.id());
 
@@ -146,9 +151,19 @@ public class AssemblyService {
                     new AssemblyEvents.AssemblyCompleted(
                             jobId, cmd.templateId(), cmd.templateVersionNumber(), Instant.now()));
 
-            String downloadUrl = docResponse.files().isEmpty()
-                    ? null : docResponse.files().get(0).downloadUrl();
-            return new AssemblyResult(job, rendered.filename(), docResponse.id(), downloadUrl);
+            // Pair each rendered format with its document-service file reference (matched by format).
+            // document-service is expected to preserve order, but the match-by-format guard here
+            // tolerates any reordering.
+            List<AssembledFile> outputs = new ArrayList<>(rendered.size());
+            for (RenderedFormat r : rendered) {
+                var ref = docResponse.files().stream()
+                        .filter(f -> f.format() == toFileFormat(r.format()))
+                        .findFirst()
+                        .orElse(null);
+                outputs.add(new AssembledFile(
+                        r.format(), r.filename(), ref == null ? null : ref.downloadUrl()));
+            }
+            return new AssemblyResult(job, docResponse.id(), outputs);
         } catch (Exception e) {
             log.warn("Assembly job {} failed: {}", jobId, e.getMessage());
             String code = (e instanceof DomainException de) ? de.getErrorCode() : "assembly.error";
@@ -166,11 +181,14 @@ public class AssemblyService {
             UUID templateId,
             int templateVersionNumber,
             Map<String, Object> data,
-            OutputFormat format,
+            List<OutputFormat> formats,
             UUID requestedBy) {}
 
-    public record AssemblyResult(
-            AssemblyJobEntity job, String filename, UUID documentId, String downloadUrl) {}
+    public record AssemblyResult(AssemblyJobEntity job, UUID documentId, List<AssembledFile> files) {}
+
+    public record AssembledFile(OutputFormat format, String filename, String downloadUrl) {}
+
+    private record RenderedFormat(OutputFormat format, String filename, byte[] bytes) {}
 
     private static RenderingServiceClient.RenderFormat toRenderFormat(OutputFormat f) {
         return switch (f) {

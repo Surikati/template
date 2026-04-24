@@ -91,12 +91,15 @@ class AssemblyIT {
                 .willReturn(okJson(documentResponseJson(expectedDocumentId, templateId, 1, expectedBytes.length))));
 
         var result = service.assemble(new AssemblyCommand(
-                templateId, 1, Map.of("client", Map.of("name", "ACME")), OutputFormat.DOCX, actor));
+                templateId, 1, Map.of("client", Map.of("name", "ACME")), List.of(OutputFormat.DOCX), actor));
 
         assertThat(result.job().getState()).isEqualTo(AssemblyState.COMPLETED);
         assertThat(result.job().getCompletedAt()).isNotNull();
         assertThat(result.documentId()).isEqualTo(expectedDocumentId);
-        assertThat(result.downloadUrl()).isEqualTo("/api/v1/documents/" + expectedDocumentId + "/files/DOCX");
+        assertThat(result.files()).hasSize(1);
+        assertThat(result.files().get(0).format()).isEqualTo(OutputFormat.DOCX);
+        assertThat(result.files().get(0).downloadUrl())
+                .isEqualTo("/api/v1/documents/" + expectedDocumentId + "/files/DOCX");
 
         // Job row reflects the resulting document.
         AssemblyJobEntity saved = jobs.findById(result.job().getId()).orElseThrow();
@@ -137,7 +140,7 @@ class AssemblyIT {
                 .willReturn(okJson(documentResponseJson(expectedDocumentId, templateId, 1, expectedBytes.length))));
 
         var result = service.assemble(new AssemblyCommand(
-                templateId, 1, Map.of(), OutputFormat.DOCX, actor));
+                templateId, 1, Map.of(), List.of(OutputFormat.DOCX), actor));
 
         assertThat(result.job().getState()).isEqualTo(AssemblyState.COMPLETED);
         assertThat(result.documentId()).isEqualTo(expectedDocumentId);
@@ -164,7 +167,7 @@ class AssemblyIT {
                 .willReturn(aResponse().withStatus(404)));
 
         assertThatThrownBy(() -> service.assemble(new AssemblyCommand(
-                templateId, 1, Map.of(), OutputFormat.DOCX, actor)))
+                templateId, 1, Map.of(), List.of(OutputFormat.DOCX), actor)))
                 .isInstanceOf(DomainException.class);
 
         AssemblyJobEntity job = jobs.findAll().get(0);
@@ -184,7 +187,7 @@ class AssemblyIT {
                 .willReturn(aResponse().withStatus(500).withBody("{\"detail\":\"boom\"}")));
 
         assertThatThrownBy(() -> service.assemble(new AssemblyCommand(
-                templateId, 1, Map.of(), OutputFormat.DOCX, actor)))
+                templateId, 1, Map.of(), List.of(OutputFormat.DOCX), actor)))
                 .isInstanceOf(DomainException.class);
 
         AssemblyJobEntity job = jobs.findAll().get(0);
@@ -215,7 +218,7 @@ class AssemblyIT {
                 .willReturn(aResponse().withStatus(503).withBody("{\"detail\":\"MinIO down\"}")));
 
         assertThatThrownBy(() -> service.assemble(new AssemblyCommand(
-                templateId, 1, Map.of(), OutputFormat.DOCX, actor)))
+                templateId, 1, Map.of(), List.of(OutputFormat.DOCX), actor)))
                 .isInstanceOf(DomainException.class);
 
         AssemblyJobEntity job = jobs.findAll().get(0);
@@ -236,7 +239,7 @@ class AssemblyIT {
                 .willReturn(aResponse().withStatus(404)));
 
         assertThatThrownBy(() -> service.assemble(new AssemblyCommand(
-                templateId, 99, Map.of(), OutputFormat.DOCX, actor)))
+                templateId, 99, Map.of(), List.of(OutputFormat.DOCX), actor)))
                 .isInstanceOf(DomainException.class);
 
         AssemblyJobEntity job = jobs.findAll().get(0);
