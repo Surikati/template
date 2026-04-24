@@ -3,11 +3,11 @@ import { CanActivateFn, Router } from '@angular/router';
 import { AuthService } from './auth.service';
 
 /**
- * Guard factory — returns a CanActivateFn that requires the given Keycloak realm role.
+ * Guard factory — returns a CanActivateFn that requires at least one of the given Keycloak realm roles.
  * Triggers login when unauthenticated; redirects to /templates with a 403-like bounce when the
- * user is authenticated but lacks the role.
+ * user is authenticated but lacks all required roles.
  */
-export function hasRole(role: string): CanActivateFn {
+export function hasRole(...roles: string[]): CanActivateFn {
   return () => {
     const auth = inject(AuthService);
     const router = inject(Router);
@@ -15,7 +15,7 @@ export function hasRole(role: string): CanActivateFn {
       auth.login();
       return false;
     }
-    if (auth.hasRole(role)) return true;
+    if (roles.some((r) => auth.hasRole(r))) return true;
     router.navigate(['/templates']);
     return false;
   };

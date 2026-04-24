@@ -10,6 +10,7 @@ import {
   signal,
 } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
+import { Router } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
 import { MessageService } from 'primeng/api';
 import { TagModule } from 'primeng/tag';
@@ -23,6 +24,7 @@ import {
 } from 'rxjs';
 
 import {
+  QuestionnaireApiService,
   TemplateApiService,
   TemplateDraftResponse,
   TemplateResponse,
@@ -100,10 +102,20 @@ type SaveState = 'idle' | 'saving' | 'saved' | 'error';
           } @else {
             <ul>
               @for (v of list; track v.id) {
-                <li>
-                  <strong>v{{ v.versionNumber }}</strong>
-                  — {{ v.publishedAt | date: 'medium' }}
-                  @if (v.changeNote) { <span class="note">· {{ v.changeNote }}</span> }
+                <li class="version-row">
+                  <div class="version-meta">
+                    <strong>v{{ v.versionNumber }}</strong>
+                    — {{ v.publishedAt | date: 'medium' }}
+                    @if (v.changeNote) { <span class="note">· {{ v.changeNote }}</span> }
+                  </div>
+                  <p-button
+                    label="Dotazník"
+                    icon="pi pi-list"
+                    [text]="true"
+                    severity="secondary"
+                    size="small"
+                    (onClick)="openQuestionnaire(tpl.id, v.versionNumber)"
+                  />
                 </li>
               }
             </ul>
@@ -141,6 +153,7 @@ type SaveState = 'idle' | 'saving' | 'saved' | 'error';
       .save-state.error  { color: #dc2626; }
       .versions ul { list-style: none; padding: 0; margin: 0; }
       .versions li { padding: 0.5rem 0; border-bottom: 1px solid #f4f4f5; }
+      .version-row { display: flex; justify-content: space-between; align-items: center; gap: 1rem; }
       .note { color: #71717a; font-size: 0.9rem; }
       .muted { color: #71717a; }
     `,
@@ -148,6 +161,8 @@ type SaveState = 'idle' | 'saving' | 'saved' | 'error';
 })
 export class TemplateEditorPageComponent implements OnDestroy {
   private readonly api = inject(TemplateApiService);
+  private readonly questionnaireApi = inject(QuestionnaireApiService);
+  private readonly router = inject(Router);
   private readonly messages = inject(MessageService);
 
   /** Router component input — populated from `:id` path param via withComponentInputBinding(). */
@@ -225,5 +240,16 @@ export class TemplateEditorPageComponent implements OnDestroy {
 
   private refreshVersions(id: string): void {
     this.api.listVersions(id).subscribe((list) => this.versions.set(list));
+  }
+
+  protected openQuestionnaire(templateId: string, versionNumber: number): void {
+    this.questionnaireApi.findByTemplateVersion(templateId, versionNumber).subscribe({
+      next: (q) => this.router.navigate(['/questionnaires', q.id, 'edit']),
+      error: () => {
+        this.router.navigate(['/questionnaires', 'new'], {
+          queryParams: { templateId, versionNumber },
+        });
+      },
+    });
   }
 }

@@ -7,6 +7,7 @@ import cz.komercpoj.tmpmgmt.assembly.client.DocumentServiceClient;
 import cz.komercpoj.tmpmgmt.assembly.client.RenderingServiceClient;
 import cz.komercpoj.tmpmgmt.assembly.client.TemplateServiceClient;
 import cz.komercpoj.tmpmgmt.assembly.client.TemplateVersionDto;
+import cz.komercpoj.tmpmgmt.assembly.domain.OutputFormat;
 import cz.komercpoj.tmpmgmt.assembly.persistence.AssemblyJobEntity;
 import cz.komercpoj.tmpmgmt.assembly.persistence.AssemblyJobRepository;
 import cz.komercpoj.tmpmgmt.common.DomainException;
@@ -120,8 +121,9 @@ public class AssemblyService {
 
             job.markRendering();
 
+            var renderFormat = toRenderFormat(cmd.format());
             var renderRequest = new RenderingServiceClient.RenderRequest(
-                    composedAst, cmd.data(), RenderingServiceClient.RenderFormat.DOCX);
+                    composedAst, cmd.data(), renderFormat);
             var rendered = renderingClient.render(renderRequest);
 
             // Hand off to document-service for durable storage in MinIO.
@@ -131,7 +133,7 @@ public class AssemblyService {
                     jobId,
                     inputDataJson,
                     List.of(new DocumentServiceClient.FileInputDto(
-                            DocumentServiceClient.FileFormat.DOCX,
+                            toFileFormat(cmd.format()),
                             Base64.getEncoder().encodeToString(rendered.content()))));
             var docResponse = documentClient.upload(docRequest);
 
@@ -164,11 +166,23 @@ public class AssemblyService {
             UUID templateId,
             int templateVersionNumber,
             Map<String, Object> data,
-            Format format,
-            UUID requestedBy) {
-        public enum Format { DOCX }
-    }
+            OutputFormat format,
+            UUID requestedBy) {}
 
     public record AssemblyResult(
             AssemblyJobEntity job, String filename, UUID documentId, String downloadUrl) {}
+
+    private static RenderingServiceClient.RenderFormat toRenderFormat(OutputFormat f) {
+        return switch (f) {
+            case DOCX -> RenderingServiceClient.RenderFormat.DOCX;
+            case PDF -> RenderingServiceClient.RenderFormat.PDF;
+        };
+    }
+
+    private static DocumentServiceClient.FileFormat toFileFormat(OutputFormat f) {
+        return switch (f) {
+            case DOCX -> DocumentServiceClient.FileFormat.DOCX;
+            case PDF -> DocumentServiceClient.FileFormat.PDF;
+        };
+    }
 }

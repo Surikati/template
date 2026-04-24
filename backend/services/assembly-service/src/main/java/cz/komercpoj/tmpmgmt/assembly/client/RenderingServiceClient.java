@@ -14,6 +14,7 @@ public interface RenderingServiceClient {
 
     enum RenderFormat {
         DOCX,
+        PDF,
         HTML
     }
 

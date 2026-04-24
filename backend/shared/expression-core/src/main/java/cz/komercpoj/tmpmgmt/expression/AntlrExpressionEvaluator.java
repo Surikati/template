@@ -2,6 +2,8 @@ package cz.komercpoj.tmpmgmt.expression;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -127,9 +129,17 @@ public class AntlrExpressionEvaluator implements ExpressionEvaluator {
                 case ">"  -> cmp(left, right) > 0;
                 case "<=" -> cmp(left, right) <= 0;
                 case ">=" -> cmp(left, right) >= 0;
+                case "in" -> contains(right, left);
                 default -> throw new ExpressionException(
                         "expression.unknown_op", "Unknown operator: " + ctx.op.getText());
             };
+        }
+
+        @Override
+        public Object visitList(TmpExprParser.ListContext ctx) {
+            List<Object> items = new ArrayList<>(ctx.expression().size());
+            for (var e : ctx.expression()) items.add(visit(e));
+            return items;
         }
 
         @Override
@@ -169,6 +179,7 @@ public class AntlrExpressionEvaluator implements ExpressionEvaluator {
         public Object visitPrimary(TmpExprParser.PrimaryContext ctx) {
             if (ctx.expression() != null) return visit(ctx.expression());
             if (ctx.literal() != null) return visit(ctx.literal());
+            if (ctx.list() != null) return visit(ctx.list());
             if (ctx.functionCall() != null) return visit(ctx.functionCall());
             return visit(ctx.path());
         }
@@ -270,6 +281,24 @@ public class AntlrExpressionEvaluator implements ExpressionEvaluator {
             if (o == null) return "null";
             return o.getClass().getSimpleName();
         }
+
+        /**
+         * {@code value in collection} — true when collection contains an element equal to value
+         * under our {@link #eq} semantics. Right side must be a Collection (typically a list
+         * literal or a path resolving to a list); other shapes throw a type error.
+         */
+        private static boolean contains(Object collection, Object value) {
+            if (collection == null) return false;
+            if (!(collection instanceof Collection<?> c)) {
+                throw new ExpressionException(
+                        "expression.type_error",
+                        "Right side of `in` must be a list, got " + typeOf(collection));
+            }
+            for (Object item : c) {
+                if (eq(item, value)) return true;
+            }
+            return false;
+        }
     }
 
     /** Truthy coercion — booleans as-is, null is false, non-empty strings/collections are true. */
@@ -293,6 +322,13 @@ public class AntlrExpressionEvaluator implements ExpressionEvaluator {
                 case "empty" -> !Truthy.asBoolean(arg(args, 0, name));
                 case "today" -> LocalDate.now().toString();
                 case "formatDate" -> formatDate(arg(args, 0, name), str(args, 1, name));
+                case "addDays" -> addDays(arg(args, 0, name), longArg(args, 1, name));
+                case "daysBetween" -> daysBetween(arg(args, 0, name), arg(args, 1, name));
+                case "contains" -> str(args, 0, name).contains(str(args, 1, name));
+                case "startsWith" -> str(args, 0, name).startsWith(str(args, 1, name));
+                case "endsWith" -> str(args, 0, name).endsWith(str(args, 1, name));
+                case "lower" -> str(args, 0, name).toLowerCase();
+                case "upper" -> str(args, 0, name).toUpperCase();
                 default -> throw new ExpressionException(
                         "expression.unknown_function", "Unknown function: " + name);
             };
@@ -314,6 +350,14 @@ public class AntlrExpressionEvaluator implements ExpressionEvaluator {
                     "Function " + name + " argument " + i + " must be a string, got " + v);
         }
 
+        private static long longArg(List<Object> args, int i, String name) {
+            Object v = arg(args, i, name);
+            if (v instanceof Number n) return n.longValue();
+            throw new ExpressionException(
+                    "expression.type_error",
+                    "Function " + name + " argument " + i + " must be a number, got " + v);
+        }
+
         private static long len(Object v) {
             if (v == null) return 0;
             if (v instanceof String s) return s.length();
@@ -325,17 +369,29 @@ public class AntlrExpressionEvaluator implements ExpressionEvaluator {
 
         private static String formatDate(Object dateValue, String pattern) {
             if (dateValue == null) return "";
-            LocalDate d;
-            if (dateValue instanceof String s) {
-                d = LocalDate.parse(s);
-            } else if (dateValue instanceof LocalDate ld) {
-                d = ld;
-            } else {
-                throw new ExpressionException(
-                        "expression.type_error",
-                        "formatDate expects ISO string or LocalDate, got " + dateValue);
-            }
-            return d.format(DateTimeFormatter.ofPattern(pattern));
+            return toLocalDate(dateValue, "formatDate")
+                    .format(DateTimeFormatter.ofPattern(pattern));
+        }
+
+        /** Returns ISO-formatted string ({@code yyyy-MM-dd}) so it round-trips with {@code today()}. */
+        private static String addDays(Object dateValue, long days) {
+            if (dateValue == null) return "";
+            return toLocalDate(dateValue, "addDays").plusDays(days).toString();
+        }
+
+        /** Always returns the absolute count — direction is rarely meaningful in template rules. */
+        private static long daysBetween(Object a, Object b) {
+            LocalDate da = toLocalDate(a, "daysBetween");
+            LocalDate db = toLocalDate(b, "daysBetween");
+            return Math.abs(ChronoUnit.DAYS.between(da, db));
+        }
+
+        private static LocalDate toLocalDate(Object value, String fnName) {
+            if (value instanceof LocalDate ld) return ld;
+            if (value instanceof String s) return LocalDate.parse(s);
+            throw new ExpressionException(
+                    "expression.type_error",
+                    fnName + " expects ISO string or LocalDate, got " + value);
         }
     }
 }

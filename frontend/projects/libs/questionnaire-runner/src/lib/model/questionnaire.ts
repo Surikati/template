@@ -7,21 +7,27 @@ export type QuestionType =
   | 'MULTISELECT'
   | 'GROUP';
 
+export interface QuestionOption {
+  value: string;
+  label: string;
+}
+
 export interface Question {
   id: string;
+  ordinal: number;
   variablePath: string;
   label: string;
   questionType: QuestionType;
-  validation?: Record<string, unknown>;
-  visibilityRule?: string;
-  options?: Array<{ value: string; label: string }>;
+  validation?: Record<string, unknown> | null;
+  visibilityRule?: string | null;
+  options?: QuestionOption[] | null;
 }
 
 export interface Section {
   id: string;
-  title: string;
   ordinal: number;
-  visibilityRule?: string;
+  title: string;
+  visibilityRule?: string | null;
   questions: Question[];
 }
 

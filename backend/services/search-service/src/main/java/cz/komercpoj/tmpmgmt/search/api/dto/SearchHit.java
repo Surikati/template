@@ -1,6 +1,7 @@
 package cz.komercpoj.tmpmgmt.search.api.dto;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 public record SearchHit(
@@ -10,6 +11,7 @@ public record SearchHit(
         String name,
         String description,
         String category,
+        List<String> tags,
         String status,
         Instant updatedAt,
         double score) {}

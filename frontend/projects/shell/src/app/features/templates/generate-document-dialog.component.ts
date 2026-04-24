@@ -19,6 +19,7 @@ import { MessageService } from 'primeng/api';
 import {
   AssembleResponse,
   AssemblyApiService,
+  OutputFormat,
   TemplateVersionResponse,
 } from '@tmpmgmt/api-client';
 import { ProblemDetail } from '@tmpmgmt/core';
@@ -54,6 +55,16 @@ import { ProblemDetail } from '@tmpmgmt/core';
               optionValue="versionNumber"
               appendTo="body"
               placeholder="Vyberte verzi"
+            />
+          </label>
+          <label>
+            <span>Formát</span>
+            <p-dropdown
+              formControlName="format"
+              [options]="formatOptions"
+              optionLabel="label"
+              optionValue="value"
+              appendTo="body"
             />
           </label>
           <label>
@@ -196,8 +207,14 @@ export class GenerateDocumentDialogComponent {
     return html ? this.sanitizer.bypassSecurityTrustHtml(html) : null;
   });
 
+  protected readonly formatOptions: { label: string; value: OutputFormat }[] = [
+    { label: 'DOCX', value: 'DOCX' },
+    { label: 'PDF', value: 'PDF' },
+  ];
+
   protected readonly form = this.fb.nonNullable.group({
     versionNumber: [0, Validators.required],
+    format: ['DOCX' as OutputFormat, Validators.required],
     dataJson: ['{\n  \n}', Validators.required],
   });
 
@@ -267,6 +284,7 @@ export class GenerateDocumentDialogComponent {
         templateId: this.templateId(),
         templateVersionNumber: raw.versionNumber,
         data,
+        format: raw.format,
       })
       .subscribe({
         next: (res) => {

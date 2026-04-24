@@ -75,7 +75,14 @@ public class TemplateService {
                 id.toString(),
                 TemplateEvents.TYPE_CREATED,
                 new TemplateEvents.TemplateCreated(
-                        id, cmd.slug(), cmd.name(), cmd.ownerUserId(), Instant.now()));
+                        id,
+                        cmd.slug(),
+                        cmd.name(),
+                        cmd.description(),
+                        cmd.category(),
+                        List.of(t.getTags()),
+                        cmd.ownerUserId(),
+                        Instant.now()));
         return t;
     }
 

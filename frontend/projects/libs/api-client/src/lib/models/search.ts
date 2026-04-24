@@ -7,6 +7,7 @@ export interface SearchHit {
   name?: string;
   description?: string;
   category?: string;
+  tags?: string[];
   status?: string;
   updatedAt?: string;
   score: number;

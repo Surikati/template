@@ -2,8 +2,18 @@ import { Routes } from '@angular/router';
 
 export const adminRoutes: Routes = [
   {
-    path: 'users',
-    loadComponent: () => import('./user-list.component').then((m) => m.UserListComponent),
+    path: '',
+    loadComponent: () => import('./admin-shell.component').then((m) => m.AdminShellComponent),
+    children: [
+      {
+        path: 'users',
+        loadComponent: () => import('./user-list.component').then((m) => m.UserListComponent),
+      },
+      {
+        path: 'audit',
+        loadComponent: () => import('./audit-viewer.component').then((m) => m.AuditViewerComponent),
+      },
+      { path: '', pathMatch: 'full', redirectTo: 'users' },
+    ],
   },
-  { path: '', pathMatch: 'full', redirectTo: 'users' },
 ];

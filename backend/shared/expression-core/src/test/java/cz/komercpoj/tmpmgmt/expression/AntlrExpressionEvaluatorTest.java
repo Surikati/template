@@ -110,4 +110,76 @@ class AntlrExpressionEvaluatorTest {
         assertThat(eval.evaluateBoolean("order.total > 100000 && client.vip", data)).isTrue();
         assertThat(eval.evaluateBoolean("order.total > 100000 && !client.vip", data)).isFalse();
     }
+
+    @Test
+    void inOperator_withListLiteral() {
+        Map<String, Object> data = Map.of("country", "CZ");
+        assertThat(eval.evaluateBoolean("country in ['CZ', 'SK']", data)).isTrue();
+        assertThat(eval.evaluateBoolean("country in ['DE', 'AT']", data)).isFalse();
+        assertThat(eval.evaluateBoolean("'PL' in ['CZ', 'SK', 'PL']", Map.of())).isTrue();
+    }
+
+    @Test
+    void inOperator_withListFromData_andNumericEqualitySemantics() {
+        Map<String, Object> data = Map.of(
+                "tags", List.of("vip", "enterprise"),
+                "scores", List.of(1, 2, 3));
+        assertThat(eval.evaluateBoolean("'vip' in tags", data)).isTrue();
+        assertThat(eval.evaluateBoolean("'unknown' in tags", data)).isFalse();
+        // long literal vs Integer in collection — eq() coerces both to double for numbers
+        assertThat(eval.evaluateBoolean("2 in scores", data)).isTrue();
+    }
+
+    @Test
+    void inOperator_emptyAndNullCollection() {
+        assertThat(eval.evaluateBoolean("'x' in []", Map.of())).isFalse();
+        assertThat(eval.evaluateBoolean("'x' in missing.list", Map.of())).isFalse();
+    }
+
+    @Test
+    void inOperator_nonCollectionRhs_throws() {
+        assertThatThrownBy(() -> eval.evaluate("'x' in 5", Map.of()))
+                .isInstanceOf(ExpressionException.class)
+                .hasMessageContaining("must be a list");
+    }
+
+    @Test
+    void stringFunctions() {
+        Map<String, Object> data = Map.of("email", "Alice@Example.com");
+        assertThat(eval.evaluate("contains('hello world', 'world')", Map.of())).isEqualTo(true);
+        assertThat(eval.evaluate("contains('abc', 'xyz')", Map.of())).isEqualTo(false);
+        assertThat(eval.evaluate("startsWith('cz_company', 'cz_')", Map.of())).isEqualTo(true);
+        assertThat(eval.evaluate("endsWith(email, '.com')", data)).isEqualTo(true);
+        assertThat(eval.evaluate("lower(email)", data)).isEqualTo("alice@example.com");
+        assertThat(eval.evaluate("upper('hi')", Map.of())).isEqualTo("HI");
+    }
+
+    @Test
+    void dateArithmetic() {
+        assertThat(eval.evaluate("addDays('2026-04-23', 7)", Map.of())).isEqualTo("2026-04-30");
+        assertThat(eval.evaluate("addDays('2026-04-23', -23)", Map.of())).isEqualTo("2026-03-31");
+        assertThat(eval.evaluate("daysBetween('2026-04-01', '2026-04-30')", Map.of()))
+                .isEqualTo(29L);
+        // Direction-agnostic
+        assertThat(eval.evaluate("daysBetween('2026-04-30', '2026-04-01')", Map.of()))
+                .isEqualTo(29L);
+    }
+
+    @Test
+    void datesCompareLexicographically_iso8601IsSortable() {
+        // ISO format means string comparison happens to work as date comparison.
+        Map<String, Object> data = Map.of("expiry", "2026-12-31");
+        assertThat(eval.evaluateBoolean("expiry > '2026-01-01'", data)).isTrue();
+        assertThat(eval.evaluateBoolean("expiry < today() && false", data)).isFalse();
+    }
+
+    @Test
+    void identifierContainingIn_lexedAsIdent_notAsKeyword() {
+        // `index`, `instance`, `infinite` should NOT be lexed as the IN keyword.
+        Map<String, Object> data = Map.of(
+                "index", 5,
+                "instance", Map.of("id", "abc"));
+        assertThat(eval.evaluate("index", data)).isEqualTo(5);
+        assertThat(eval.evaluate("instance.id", data)).isEqualTo("abc");
+    }
 }

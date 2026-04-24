@@ -7,7 +7,7 @@ import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
 import cz.komercpoj.tmpmgmt.assembly.application.AssemblyService;
 import cz.komercpoj.tmpmgmt.assembly.application.AssemblyService.AssemblyCommand;
-import cz.komercpoj.tmpmgmt.assembly.application.AssemblyService.AssemblyCommand.Format;
+import cz.komercpoj.tmpmgmt.assembly.domain.OutputFormat;
 import cz.komercpoj.tmpmgmt.assembly.domain.AssemblyState;
 import cz.komercpoj.tmpmgmt.assembly.persistence.AssemblyJobEntity;
 import cz.komercpoj.tmpmgmt.assembly.persistence.AssemblyJobRepository;
@@ -91,7 +91,7 @@ class AssemblyIT {
                 .willReturn(okJson(documentResponseJson(expectedDocumentId, templateId, 1, expectedBytes.length))));
 
         var result = service.assemble(new AssemblyCommand(
-                templateId, 1, Map.of("client", Map.of("name", "ACME")), Format.DOCX, actor));
+                templateId, 1, Map.of("client", Map.of("name", "ACME")), OutputFormat.DOCX, actor));
 
         assertThat(result.job().getState()).isEqualTo(AssemblyState.COMPLETED);
         assertThat(result.job().getCompletedAt()).isNotNull();
@@ -137,7 +137,7 @@ class AssemblyIT {
                 .willReturn(okJson(documentResponseJson(expectedDocumentId, templateId, 1, expectedBytes.length))));
 
         var result = service.assemble(new AssemblyCommand(
-                templateId, 1, Map.of(), Format.DOCX, actor));
+                templateId, 1, Map.of(), OutputFormat.DOCX, actor));
 
         assertThat(result.job().getState()).isEqualTo(AssemblyState.COMPLETED);
         assertThat(result.documentId()).isEqualTo(expectedDocumentId);
@@ -164,7 +164,7 @@ class AssemblyIT {
                 .willReturn(aResponse().withStatus(404)));
 
         assertThatThrownBy(() -> service.assemble(new AssemblyCommand(
-                templateId, 1, Map.of(), Format.DOCX, actor)))
+                templateId, 1, Map.of(), OutputFormat.DOCX, actor)))
                 .isInstanceOf(DomainException.class);
 
         AssemblyJobEntity job = jobs.findAll().get(0);
@@ -184,7 +184,7 @@ class AssemblyIT {
                 .willReturn(aResponse().withStatus(500).withBody("{\"detail\":\"boom\"}")));
 
         assertThatThrownBy(() -> service.assemble(new AssemblyCommand(
-                templateId, 1, Map.of(), Format.DOCX, actor)))
+                templateId, 1, Map.of(), OutputFormat.DOCX, actor)))
                 .isInstanceOf(DomainException.class);
 
         AssemblyJobEntity job = jobs.findAll().get(0);
@@ -215,7 +215,7 @@ class AssemblyIT {
                 .willReturn(aResponse().withStatus(503).withBody("{\"detail\":\"MinIO down\"}")));
 
         assertThatThrownBy(() -> service.assemble(new AssemblyCommand(
-                templateId, 1, Map.of(), Format.DOCX, actor)))
+                templateId, 1, Map.of(), OutputFormat.DOCX, actor)))
                 .isInstanceOf(DomainException.class);
 
         AssemblyJobEntity job = jobs.findAll().get(0);
@@ -236,7 +236,7 @@ class AssemblyIT {
                 .willReturn(aResponse().withStatus(404)));
 
         assertThatThrownBy(() -> service.assemble(new AssemblyCommand(
-                templateId, 99, Map.of(), Format.DOCX, actor)))
+                templateId, 99, Map.of(), OutputFormat.DOCX, actor)))
                 .isInstanceOf(DomainException.class);
 
         AssemblyJobEntity job = jobs.findAll().get(0);

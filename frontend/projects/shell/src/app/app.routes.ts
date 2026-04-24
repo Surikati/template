@@ -24,6 +24,13 @@ export const appRoutes: Routes = [
         loadChildren: () =>
           import('./features/admin/admin.routes').then((m) => m.adminRoutes),
       },
+      {
+        path: 'questionnaires',
+        loadChildren: () =>
+          import('./features/questionnaires/questionnaires.routes').then(
+            (m) => m.questionnairesRoutes,
+          ),
+      },
       { path: '', pathMatch: 'full', redirectTo: 'templates' },
     ],
   },

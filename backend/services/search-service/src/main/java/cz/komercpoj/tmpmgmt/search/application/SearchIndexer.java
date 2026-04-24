@@ -6,6 +6,8 @@ import cz.komercpoj.tmpmgmt.search.config.OpenSearchConfig;
 import cz.komercpoj.tmpmgmt.search.domain.SearchableDocument;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.opensearch.client.opensearch.OpenSearchClient;
@@ -18,9 +20,9 @@ import org.springframework.stereotype.Component;
 
 /**
  * Listens for template and clause domain events and keeps the OpenSearch indices in sync.
- * Field coverage is limited to what events carry (id, slug, name, status). Richer fields
- * like description/category would need a follow-up fetch against the owning service or wider
- * event payloads — deferred.
+ * Created events carry the full indexable metadata (description, category, tags) so this
+ * service stays event-driven without follow-up API fetches. Subsequent {@code version.published}
+ * and {@code archived} events do narrow partial updates (timestamp / status only).
  */
 @Component
 public class SearchIndexer {
@@ -78,10 +80,11 @@ public class SearchIndexer {
     private void upsertFromCreated(String index, UUID id, JsonNode payload) throws Exception {
         SearchableDocument doc = new SearchableDocument(
                 id,
-                payload.path("slug").asText(null),
-                payload.path("name").asText(null),
-                null,                                 // description — not in event
-                null,                                 // category — not in event
+                textOrNull(payload, "slug"),
+                textOrNull(payload, "name"),
+                textOrNull(payload, "description"),
+                textOrNull(payload, "category"),
+                readStringList(payload, "tags"),
                 "ACTIVE",
                 occurredAt(payload));
         client.update(UpdateRequest.of(u -> u
@@ -89,6 +92,21 @@ public class SearchIndexer {
                 .id(id.toString())
                 .doc(doc)
                 .docAsUpsert(true)), SearchableDocument.class);
+    }
+
+    private static String textOrNull(JsonNode payload, String field) {
+        JsonNode n = payload.path(field);
+        return n.isTextual() ? n.asText() : null;
+    }
+
+    private static List<String> readStringList(JsonNode payload, String field) {
+        JsonNode arr = payload.path(field);
+        if (!arr.isArray()) return List.of();
+        List<String> out = new ArrayList<>(arr.size());
+        for (JsonNode el : arr) {
+            if (el.isTextual()) out.add(el.asText());
+        }
+        return out;
     }
 
     private void touchUpdated(String index, UUID id, JsonNode payload) throws Exception {

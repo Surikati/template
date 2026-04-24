@@ -54,6 +54,7 @@
 
         <!-- Domain-specific -->
         <docx4j.version>11.5.0</docx4j.version>
+        <openhtmltopdf.version>1.0.10</openhtmltopdf.version>
         <json-schema-validator.version>1.5.2</json-schema-validator.version>
         <antlr4.version>4.13.2</antlr4.version>
 
@@ -132,6 +133,11 @@
                 <groupId>org.docx4j</groupId>
                 <artifactId>docx4j-core</artifactId>
                 <version>${docx4j.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.openhtmltopdf</groupId>
+                <artifactId>openhtmltopdf-pdfbox</artifactId>
+                <version>${openhtmltopdf.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.antlr</groupId>

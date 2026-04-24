@@ -54,7 +54,14 @@ public class ClauseService {
                 id.toString(),
                 ClauseEvents.TYPE_CREATED,
                 new ClauseEvents.ClauseCreated(
-                        id, cmd.slug(), cmd.name(), cmd.ownerUserId(), Instant.now()));
+                        id,
+                        cmd.slug(),
+                        cmd.name(),
+                        cmd.description(),
+                        cmd.category(),
+                        List.of(c.getTags()),
+                        cmd.ownerUserId(),
+                        Instant.now()));
         return c;
     }
 

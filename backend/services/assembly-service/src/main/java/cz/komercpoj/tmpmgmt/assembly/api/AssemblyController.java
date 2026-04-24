@@ -4,6 +4,7 @@ import cz.komercpoj.tmpmgmt.assembly.api.dto.AssembleRequest;
 import cz.komercpoj.tmpmgmt.assembly.api.dto.AssembleResponse;
 import cz.komercpoj.tmpmgmt.assembly.application.AssemblyService;
 import cz.komercpoj.tmpmgmt.assembly.application.AssemblyService.AssemblyCommand;
+import cz.komercpoj.tmpmgmt.assembly.domain.OutputFormat;
 import jakarta.validation.Valid;
 import java.net.URI;
 import java.util.UUID;
@@ -30,7 +31,7 @@ public class AssemblyController {
                 req.templateId(),
                 req.templateVersionNumber(),
                 req.data(),
-                AssemblyCommand.Format.DOCX,
+                req.formatOrDefault(),
                 currentUserId(jwt)));
         var job = result.job();
         var body = new AssembleResponse(
@@ -49,7 +50,7 @@ public class AssemblyController {
                 req.templateId(),
                 req.templateVersionNumber(),
                 req.data(),
-                AssemblyCommand.Format.DOCX,
+                OutputFormat.DOCX,
                 currentUserId(jwt)));
     }
 

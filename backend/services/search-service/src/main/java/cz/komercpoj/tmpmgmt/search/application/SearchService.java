@@ -3,6 +3,7 @@ package cz.komercpoj.tmpmgmt.search.application;
 import cz.komercpoj.tmpmgmt.search.api.dto.SearchHit;
 import cz.komercpoj.tmpmgmt.search.config.OpenSearchConfig;
 import cz.komercpoj.tmpmgmt.search.domain.SearchableDocument;
+import java.util.Collections;
 import java.util.List;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.query_dsl.MultiMatchQuery;
@@ -26,9 +27,13 @@ public class SearchService {
         int capped = Math.min(Math.max(1, limit), MAX_LIMIT);
         List<String> indices = resolveIndices(type);
 
+        // Field weights: name dominates (^3), then tags (^2 — concise + curated by users),
+        // then category, description, slug. Multi-match best_fields picks the highest-scoring
+        // field per document, which matches search-bar UX (user typed one query, expect a
+        // single relevant snippet).
         Query q = Query.of(qb -> qb.multiMatch(MultiMatchQuery.of(mm -> mm
                 .query(query == null ? "" : query)
-                .fields("name^2", "description", "slug"))));
+                .fields("name^3", "tags^2", "category", "description", "slug"))));
 
         try {
             SearchResponse<SearchableDocument> resp = client.search(
@@ -39,16 +44,20 @@ public class SearchService {
                     SearchableDocument.class);
 
             return resp.hits().hits().stream()
-                    .map(h -> new SearchHit(
-                            h.source() == null ? null : h.source().id(),
-                            indexToType(h.index()),
-                            h.source() == null ? null : h.source().slug(),
-                            h.source() == null ? null : h.source().name(),
-                            h.source() == null ? null : h.source().description(),
-                            h.source() == null ? null : h.source().category(),
-                            h.source() == null ? null : h.source().status(),
-                            h.source() == null ? null : h.source().updatedAt(),
-                            h.score() == null ? 0.0 : h.score()))
+                    .map(h -> {
+                        SearchableDocument src = h.source();
+                        return new SearchHit(
+                                src == null ? null : src.id(),
+                                indexToType(h.index()),
+                                src == null ? null : src.slug(),
+                                src == null ? null : src.name(),
+                                src == null ? null : src.description(),
+                                src == null ? null : src.category(),
+                                src == null || src.tags() == null ? Collections.emptyList() : src.tags(),
+                                src == null ? null : src.status(),
+                                src == null ? null : src.updatedAt(),
+                                h.score() == null ? 0.0 : h.score());
+                    })
                     .toList();
         } catch (Exception ex) {
             throw new RuntimeException("Search failed: " + ex.getMessage(), ex);

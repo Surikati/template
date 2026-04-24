@@ -1,11 +1,14 @@
 package cz.komercpoj.tmpmgmt.template.application.events;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 /**
- * Event payloads staged to the outbox. Kept lean (IDs + metadata, no full content) so RabbitMQ
- * messages stay small and consumers pull full state via the API when they need it.
+ * Event payloads staged to the outbox. {@link TemplateCreated} carries the full set of indexable
+ * metadata (description, category, tags) so downstream consumers like search-service can build
+ * their projection without a follow-up API fetch. Heavy fields (template content, variables
+ * schema) stay out — consumers that need them call template-service directly.
  */
 public final class TemplateEvents {
 
@@ -19,7 +22,14 @@ public final class TemplateEvents {
     public static final String TYPE_ARCHIVED = "archived";
 
     public record TemplateCreated(
-            UUID templateId, String slug, String name, UUID ownerUserId, Instant occurredAt) {}
+            UUID templateId,
+            String slug,
+            String name,
+            String description,
+            String category,
+            List<String> tags,
+            UUID ownerUserId,
+            Instant occurredAt) {}
 
     public record TemplateDraftSaved(
             UUID templateId, UUID editorUserId, Instant occurredAt) {}
