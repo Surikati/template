@@ -20,6 +20,9 @@ tmpmgmt:
   rendering:
     libreoffice-binary: ${LIBREOFFICE_BIN:/usr/bin/soffice}
     max-concurrent-conversions: 4
+    locale: ${RENDERING_LOCALE:cs-CZ}
+    timezone: ${RENDERING_TIMEZONE:Europe/Prague}
+    default-currency: ${RENDERING_DEFAULT_CURRENCY:CZK}
 
 management:
   endpoints:

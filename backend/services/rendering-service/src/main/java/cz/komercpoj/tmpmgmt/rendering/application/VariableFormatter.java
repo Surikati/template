@@ -1,5 +1,6 @@
 package cz.komercpoj.tmpmgmt.rendering.application;
 
+import cz.komercpoj.tmpmgmt.rendering.config.RenderingProperties;
 import java.text.NumberFormat;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -16,21 +17,35 @@ import org.springframework.stereotype.Component;
  *
  * <ul>
  *   <li>{@code number[:decimals]}    — 1234.5 → {@code 1 234,50}
- *   <li>{@code currency[:code]}      — 1234.5 → {@code 1 234,50 Kč} (default code CZK)
+ *   <li>{@code currency[:code]}      — 1234.5 → {@code 1 234,50 Kč} (default code from config)
  *   <li>{@code date[:pattern]}       — "2026-04-23" → {@code 23.04.2026}
  *   <li>{@code datetime[:pattern]}   — Instant → {@code 23.04.2026 15:30}
  * </ul>
  *
- * <p>Unknown or missing format → value stringified via {@link String#valueOf}.
+ * <p>Locale and timezone come from {@link RenderingProperties} so deployments can switch to
+ * en-GB / Europe/London / GBP without code changes. Unknown or missing format → value
+ * stringified via {@link String#valueOf}.
  */
 @Component
 public class VariableFormatter {
 
-    private static final Locale LOCALE = Locale.of("cs", "CZ");
-    private static final ZoneId ZONE = ZoneId.of("Europe/Prague");
     private static final String DEFAULT_DATE_PATTERN = "dd.MM.yyyy";
     private static final String DEFAULT_DATETIME_PATTERN = "dd.MM.yyyy HH:mm";
-    private static final String DEFAULT_CURRENCY = "CZK";
+
+    private final Locale locale;
+    private final ZoneId zone;
+    private final String defaultCurrency;
+
+    public VariableFormatter(RenderingProperties props) {
+        this.locale = Locale.forLanguageTag(props.locale());
+        this.zone = ZoneId.of(props.timezone());
+        this.defaultCurrency = props.defaultCurrency();
+    }
+
+    /** Convenience for tests — uses cs_CZ / Europe/Prague / CZK. */
+    public VariableFormatter() {
+        this(new RenderingProperties(null, null, null));
+    }
 
     public String format(Object value, String format) {
         if (value == null) return "";
@@ -52,7 +67,7 @@ public class VariableFormatter {
     private String formatNumber(Object v, String decimalsStr) {
         if (!(v instanceof Number n)) return String.valueOf(v);
         int decimals = parseDecimals(decimalsStr, 2);
-        NumberFormat nf = NumberFormat.getNumberInstance(LOCALE);
+        NumberFormat nf = NumberFormat.getNumberInstance(locale);
         nf.setMinimumFractionDigits(decimals);
         nf.setMaximumFractionDigits(decimals);
         return nf.format(n.doubleValue());
@@ -60,10 +75,10 @@ public class VariableFormatter {
 
     private String formatCurrency(Object v, String currencyCode) {
         if (!(v instanceof Number n)) return String.valueOf(v);
-        NumberFormat nf = NumberFormat.getCurrencyInstance(LOCALE);
+        NumberFormat nf = NumberFormat.getCurrencyInstance(locale);
         try {
             nf.setCurrency(Currency.getInstance(
-                    currencyCode == null || currencyCode.isBlank() ? DEFAULT_CURRENCY : currencyCode));
+                    currencyCode == null || currencyCode.isBlank() ? defaultCurrency : currencyCode));
         } catch (IllegalArgumentException e) {
             // unknown currency code — keep locale default
         }
@@ -74,16 +89,16 @@ public class VariableFormatter {
         String p = (pattern == null || pattern.isBlank())
                 ? (withTime ? DEFAULT_DATETIME_PATTERN : DEFAULT_DATE_PATTERN)
                 : pattern;
-        DateTimeFormatter dtf = DateTimeFormatter.ofPattern(p).withLocale(LOCALE);
+        DateTimeFormatter dtf = DateTimeFormatter.ofPattern(p).withLocale(locale);
 
         try {
             if (v instanceof LocalDate ld) return ld.format(dtf);
             if (v instanceof LocalDateTime ldt) return ldt.format(dtf);
-            if (v instanceof Instant inst) return ZonedDateTime.ofInstant(inst, ZONE).format(dtf);
+            if (v instanceof Instant inst) return ZonedDateTime.ofInstant(inst, zone).format(dtf);
             if (v instanceof String s) {
                 // Try Instant (ISO 8601 with time) first, then LocalDate.
                 try {
-                    return ZonedDateTime.ofInstant(Instant.parse(s), ZONE).format(dtf);
+                    return ZonedDateTime.ofInstant(Instant.parse(s), zone).format(dtf);
                 } catch (Exception ignored) {
                     return LocalDate.parse(s).format(dtf);
                 }
