@@ -108,10 +108,17 @@ jobs:
         # ghcr.io rejects mixed-case repo paths (Surikati/template ⇒ surikati/template).
         run: echo "REPO_LC=$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
 
+      - name: Install dependencies for ${{ matrix.service }}
+        # `-am` resolves dependent modules (common-core, common-web, expression-core …)
+        # — we install them locally so the next step can run jib:build with -pl alone.
+        working-directory: backend
+        run: ./mvnw -B -pl services/${{ matrix.service }} -am install -DskipTests -DskipITs
+
       - name: Build & push image (${{ matrix.service }})
+        # No -am here: jib:build only runs against the leaf service, not the libraries
+        # that have no main class.
         working-directory: backend
         run: |
-          ./mvnw -B -pl services/${{ matrix.service }} -am \
+          ./mvnw -B -pl services/${{ matrix.service }} jib:build \
             -Djib.to.image=ghcr.io/$REPO_LC/${{ matrix.service }}:${{ github.sha }} \
-            -Djib.to.tags=latest \
-            compile jib:build
+            -Djib.to.tags=latest
