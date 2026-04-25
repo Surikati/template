@@ -9,7 +9,6 @@
     "build:all": "ng build shell && ng build core && ng build ui-kit && ng build template-editor && ng build questionnaire-runner && ng build api-client",
     "watch": "ng build shell --watch --configuration development",
     "test": "ng test",
-    "lint": "ng lint",
     "e2e": "playwright test",
     "api:generate": "openapi-generator-cli generate -i http://localhost:8080/v3/api-docs -g typescript-angular -o projects/libs/api-client/src/lib/generated"
   },
