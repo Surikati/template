@@ -67,8 +67,12 @@ class AssemblyIT {
   }
 
   @BeforeEach
-  void resetStubs() {
+  void resetState() {
     WIRE_MOCK.resetAll();
+    // Tests share the same Spring context (and therefore the same Postgres testcontainer).
+    // Wipe job + outbox rows so each test sees a clean DB.
+    jdbc.update("DELETE FROM assembly_job");
+    jdbc.update("DELETE FROM outbox_event");
   }
 
   @Autowired AssemblyService service;

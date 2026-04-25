@@ -10,13 +10,14 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
+import org.springframework.data.domain.Persistable;
 
 @Entity
 @Table(name = "assembly_job")
 @Getter
 @Setter
 @NoArgsConstructor
-public class AssemblyJobEntity {
+public class AssemblyJobEntity implements Persistable<UUID> {
 
   @Id private UUID id;
 
@@ -55,6 +56,26 @@ public class AssemblyJobEntity {
 
   @Column(name = "completed_at")
   private Instant completedAt;
+
+  /**
+   * Marks the entity as a fresh insert so that {@code SimpleJpaRepository.save()} routes through
+   * {@code EntityManager.persist()} (keeps this instance managed and dirty-checked) instead of
+   * {@code merge()} (returns a managed copy, leaves this instance detached). Without this, in-place
+   * mutations like {@link #markCompleted} would not be flushed at transaction commit. Cleared in
+   * {@code @PostPersist} / {@code @PostLoad} so subsequent saves merge as expected.
+   */
+  @Transient private boolean isNew = true;
+
+  @Override
+  public boolean isNew() {
+    return isNew;
+  }
+
+  @PostPersist
+  @PostLoad
+  void markNotNew() {
+    this.isNew = false;
+  }
 
   public static AssemblyJobEntity pending(
       UUID id,
