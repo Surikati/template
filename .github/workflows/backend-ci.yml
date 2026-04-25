@@ -56,16 +56,20 @@ jobs:
         working-directory: backend
         run: ./mvnw -B -pl '!shared/expression-core' spotless:check
 
-      - name: Build + test
+      - name: Build + unit + integration tests
         working-directory: backend
-        run: ./mvnw -B verify
+        # IT tests run on CI (linux runner = plain dockerd, Testcontainers happy);
+        # locally they are skipped by default (skipITs=true in parent pom).
+        run: ./mvnw -B verify -DskipITs=false
 
       - name: Upload test reports
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: surefire-reports
-          path: backend/**/target/surefire-reports
+          name: test-reports
+          path: |
+            backend/**/target/surefire-reports
+            backend/**/target/failsafe-reports
 
   docker-images:
     needs: build
