@@ -9,15 +9,33 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
+import org.springframework.data.domain.Persistable;
 
 @Entity
 @Table(name = "questionnaire_question")
 @Getter
 @Setter
 @NoArgsConstructor
-public class QuestionnaireQuestionEntity {
+public class QuestionnaireQuestionEntity implements Persistable<UUID> {
 
   @Id private UUID id;
+
+  /**
+   * Forces cascade-saved questions through {@code persist()} instead of {@code merge()} so each
+   * insert is one DB roundtrip rather than a SELECT-then-INSERT.
+   */
+  @Transient private boolean isNew = true;
+
+  @Override
+  public boolean isNew() {
+    return isNew;
+  }
+
+  @PostPersist
+  @PostLoad
+  void markNotNew() {
+    this.isNew = false;
+  }
 
   @ManyToOne(fetch = FetchType.LAZY, optional = false)
   @JoinColumn(name = "section_id")

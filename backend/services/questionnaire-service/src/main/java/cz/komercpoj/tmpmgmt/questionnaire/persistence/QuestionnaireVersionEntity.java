@@ -9,6 +9,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
+import org.springframework.data.domain.Persistable;
 
 /**
  * Immutable snapshot of a questionnaire structure at publish time. The {@code structureSnapshot}
@@ -21,9 +22,26 @@ import org.hibernate.type.SqlTypes;
 @Getter
 @Setter
 @NoArgsConstructor
-public class QuestionnaireVersionEntity {
+public class QuestionnaireVersionEntity implements Persistable<UUID> {
 
   @Id private UUID id;
+
+  /**
+   * Forces {@code save()} through {@code persist()} so the insert avoids a redundant {@code SELECT
+   * WHERE id=?} that {@code merge()} routing would emit.
+   */
+  @Transient private boolean isNew = true;
+
+  @Override
+  public boolean isNew() {
+    return isNew;
+  }
+
+  @PostPersist
+  @PostLoad
+  void markNotNew() {
+    this.isNew = false;
+  }
 
   @Column(name = "questionnaire_id", nullable = false)
   private UUID questionnaireId;

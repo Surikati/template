@@ -9,6 +9,7 @@ import lombok.NoArgsConstructor;
 import org.hibernate.annotations.Immutable;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
+import org.springframework.data.domain.Persistable;
 
 /** Published, immutable clause snapshot. DB trigger rejects UPDATE regardless of ORM state. */
 @Entity
@@ -16,9 +17,26 @@ import org.hibernate.type.SqlTypes;
 @Immutable
 @Getter
 @NoArgsConstructor
-public class ClauseVersionEntity {
+public class ClauseVersionEntity implements Persistable<UUID> {
 
   @Id private UUID id;
+
+  /**
+   * Forces {@code save()} through {@code persist()} so the insert avoids a redundant {@code SELECT
+   * WHERE id=?} that {@code merge()} routing would emit.
+   */
+  @Transient private boolean isNew = true;
+
+  @Override
+  public boolean isNew() {
+    return isNew;
+  }
+
+  @PostPersist
+  @PostLoad
+  void markNotNew() {
+    this.isNew = false;
+  }
 
   @Column(name = "clause_id", nullable = false)
   private UUID clauseId;

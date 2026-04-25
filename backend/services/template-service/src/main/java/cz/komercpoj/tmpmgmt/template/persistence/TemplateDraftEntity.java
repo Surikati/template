@@ -9,17 +9,37 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
+import org.springframework.data.domain.Persistable;
 
 @Entity
 @Table(name = "template_draft")
 @Getter
 @Setter
 @NoArgsConstructor
-public class TemplateDraftEntity {
+public class TemplateDraftEntity implements Persistable<UUID> {
 
   @Id
   @Column(name = "template_id")
   private UUID templateId;
+
+  /** See {@link TemplateEntity#isNew} — same Persistable rationale. */
+  @Transient private boolean isNew = true;
+
+  @Override
+  public UUID getId() {
+    return templateId;
+  }
+
+  @Override
+  public boolean isNew() {
+    return isNew;
+  }
+
+  @PostPersist
+  @PostLoad
+  void markNotNew() {
+    this.isNew = false;
+  }
 
   @JdbcTypeCode(SqlTypes.JSON)
   @Column(nullable = false, columnDefinition = "jsonb")

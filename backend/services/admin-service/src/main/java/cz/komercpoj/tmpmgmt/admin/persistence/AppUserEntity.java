@@ -6,15 +6,34 @@ import java.util.UUID;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.springframework.data.domain.Persistable;
 
 @Entity
 @Table(name = "app_user")
 @Getter
 @Setter
 @NoArgsConstructor
-public class AppUserEntity {
+public class AppUserEntity implements Persistable<UUID> {
 
   @Id private UUID id;
+
+  /**
+   * Routes {@code save()} through {@code persist()} instead of {@code merge()} so the original
+   * reference stays managed and dirty checking flushes subsequent mutations. See {@code
+   * transactional_patterns.md}.
+   */
+  @Transient private boolean isNew = true;
+
+  @Override
+  public boolean isNew() {
+    return isNew;
+  }
+
+  @PostPersist
+  @PostLoad
+  void markNotNew() {
+    this.isNew = false;
+  }
 
   @Column(name = "keycloak_subject", nullable = false, unique = true, length = 100)
   private String keycloakSubject;

@@ -7,15 +7,33 @@ import java.util.UUID;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.springframework.data.domain.Persistable;
 
 @Entity
 @Table(name = "file_reference")
 @Getter
 @Setter
 @NoArgsConstructor
-public class FileReferenceEntity {
+public class FileReferenceEntity implements Persistable<UUID> {
 
   @Id private UUID id;
+
+  /**
+   * Forces cascade-saved file references through {@code persist()} instead of {@code merge()} so
+   * each insert is one DB roundtrip rather than a SELECT-then-INSERT.
+   */
+  @Transient private boolean isNew = true;
+
+  @Override
+  public boolean isNew() {
+    return isNew;
+  }
+
+  @PostPersist
+  @PostLoad
+  void markNotNew() {
+    this.isNew = false;
+  }
 
   @ManyToOne(fetch = FetchType.LAZY, optional = false)
   @JoinColumn(name = "document_id")

@@ -11,15 +11,34 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
+import org.springframework.data.domain.Persistable;
 
 @Entity
 @Table(name = "generated_document")
 @Getter
 @Setter
 @NoArgsConstructor
-public class GeneratedDocumentEntity {
+public class GeneratedDocumentEntity implements Persistable<UUID> {
 
   @Id private UUID id;
+
+  /**
+   * Routes {@code save()} through {@code persist()} instead of {@code merge()} so the cascade-saved
+   * file references and any subsequent mutations stay in a single managed reference. See {@code
+   * transactional_patterns.md}.
+   */
+  @Transient private boolean isNew = true;
+
+  @Override
+  public boolean isNew() {
+    return isNew;
+  }
+
+  @PostPersist
+  @PostLoad
+  void markNotNew() {
+    this.isNew = false;
+  }
 
   @Column(name = "template_id", nullable = false)
   private UUID templateId;

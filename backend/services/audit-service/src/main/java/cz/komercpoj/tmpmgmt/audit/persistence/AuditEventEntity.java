@@ -9,15 +9,33 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
+import org.springframework.data.domain.Persistable;
 
 @Entity
 @Table(name = "audit_event")
 @Getter
 @Setter
 @NoArgsConstructor
-public class AuditEventEntity {
+public class AuditEventEntity implements Persistable<AuditEventKey> {
 
   @EmbeddedId private AuditEventKey id;
+
+  /**
+   * Forces {@code save()} through {@code persist()} so the insert avoids a redundant {@code SELECT
+   * WHERE id=?} that {@code merge()} routing would emit.
+   */
+  @Transient private boolean isNew = true;
+
+  @Override
+  public boolean isNew() {
+    return isNew;
+  }
+
+  @PostPersist
+  @PostLoad
+  void markNotNew() {
+    this.isNew = false;
+  }
 
   @Column(name = "actor_user_id")
   private UUID actorUserId;
