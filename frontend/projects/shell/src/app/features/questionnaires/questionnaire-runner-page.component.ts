@@ -7,7 +7,8 @@ import {
   input,
   signal,
 } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
+import { DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
 import { SelectButtonModule } from 'primeng/selectbutton';
@@ -19,6 +20,7 @@ import {
   OutputFormat,
   QuestionnaireApiService,
   QuestionnaireResponse,
+  QuestionnaireVersionResponse,
   RuleInput,
   SectionResponse,
   SessionResponse,
@@ -26,17 +28,65 @@ import {
 import { ProblemDetail } from '@tmpmgmt/core';
 import { QuestionnaireRunnerComponent } from '@tmpmgmt/questionnaire-runner';
 
-type RunState = 'loading' | 'in-progress' | 'completing' | 'assembling' | 'done' | 'error';
+type RunState =
+  | 'loading'
+  | 'choose-version'
+  | 'in-progress'
+  | 'completing'
+  | 'assembling'
+  | 'done'
+  | 'error';
 
 @Component({
   selector: 'tm-questionnaire-runner-page',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, FormsModule, ButtonModule, SelectButtonModule, QuestionnaireRunnerComponent],
+  imports: [
+    RouterLink,
+    DatePipe,
+    FormsModule,
+    ButtonModule,
+    SelectButtonModule,
+    QuestionnaireRunnerComponent,
+  ],
   template: `
     @switch (state()) {
       @case ('loading') {
         <p>Načítám…</p>
+      }
+      @case ('choose-version') {
+        <div class="version-picker">
+          <h1>Vyberte verzi dotazníku</h1>
+          <p class="muted">
+            Pro spuštění zaměřeného na soulad (compliance) použijte konkrétní publikovanou verzi.
+            Strukturu lze také znovu otevřít z odkazu, který obsahuje
+            <code>?versionNumber=…</code> a tím verzi pevně připne.
+          </p>
+          <ul class="version-list">
+            @for (v of versions(); track v.versionNumber) {
+              <li>
+                <div class="v-meta">
+                  <strong>v{{ v.versionNumber }}</strong>
+                  <span class="muted">· {{ v.publishedAt | date: 'dd.MM.yyyy HH:mm' }}</span>
+                </div>
+                <p-button
+                  label="Spustit"
+                  icon="pi pi-play"
+                  size="small"
+                  (onClick)="pickVersion(v.versionNumber)"
+                />
+              </li>
+            }
+          </ul>
+          <div class="actions">
+            <p-button
+              label="Použít aktuální draft"
+              icon="pi pi-pencil"
+              severity="secondary"
+              (onClick)="useDraft()"
+            />
+          </div>
+        </div>
       }
       @case ('in-progress') {
         @if (questionnaire(); as q) {
@@ -143,6 +193,18 @@ type RunState = 'loading' | 'in-progress' | 'completing' | 'assembling' | 'done'
       .actions { display: flex; gap: 0.5rem; justify-content: center; margin-top: 1.5rem; }
       a { color: #3730a3; text-decoration: none; }
       a:hover { text-decoration: underline; }
+      .version-picker { max-width: 36rem; margin: 0 auto; }
+      .version-picker h1 { margin: 0 0 0.5rem; font-size: 1.4rem; }
+      .version-picker p { margin: 0 0 1.5rem; }
+      .version-picker code {
+        font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+        background: #f1f5f9;
+        padding: 0.05rem 0.3rem;
+        border-radius: 3px;
+      }
+      .version-list { list-style: none; padding: 0; margin: 0 0 1.5rem; display: flex; flex-direction: column; gap: 0.5rem; }
+      .version-list li { display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 1rem; background: #ffffff; border: 1px solid #e4e4e7; border-radius: 4px; }
+      .v-meta { display: flex; gap: 0.5rem; align-items: baseline; }
     `,
   ],
 })
@@ -150,11 +212,16 @@ export class QuestionnaireRunnerPageComponent {
   private readonly api = inject(QuestionnaireApiService);
   private readonly assembly = inject(AssemblyApiService);
   private readonly messages = inject(MessageService);
+  private readonly router = inject(Router);
 
   readonly id = input.required<string>();
   /** Optional query param — if present, runner uses the immutable version snapshot instead
-   *  of the current draft. Compliance flows should always pass a versionNumber. */
+   *  of the current draft. Compliance flows should always pass a versionNumber.
+   *  When absent, the page first lists published versions and lets the user pick one. */
   readonly versionNumber = input<string | number>();
+  /** Explicit "use the current draft" flag. Set by the picker's "use draft" button so
+   *  re-bootstrapping does not bounce back to the picker. */
+  readonly draft = input<string | undefined>();
 
   protected readonly questionnaire = signal<QuestionnaireResponse | null>(null);
   protected readonly session = signal<SessionResponse | null>(null);
@@ -163,6 +230,7 @@ export class QuestionnaireRunnerPageComponent {
   protected readonly errorMessage = signal<string>('');
   protected readonly saveIndicator = signal<'saving' | 'saved' | null>(null);
   protected readonly visibility = signal<Record<string, boolean>>({});
+  protected readonly versions = signal<QuestionnaireVersionResponse[]>([]);
 
   protected format: OutputFormat = 'DOCX';
   protected readonly formatOptions: { label: string; value: OutputFormat }[] = [
@@ -255,15 +323,58 @@ export class QuestionnaireRunnerPageComponent {
         },
         error: (err: ProblemDetail) => this.failWith(err),
       });
-    } else {
-      this.api.get(id).subscribe({
-        next: (q) => {
-          this.questionnaire.set(q);
-          this.startSession(id);
-        },
-        error: (err: ProblemDetail) => this.failWith(err),
-      });
+      return;
     }
+
+    if (this.draft() !== undefined) {
+      // Explicit draft mode (admin / dev) — skip the picker.
+      this.loadDraft(id);
+      return;
+    }
+
+    // No version specified and no explicit draft override — list published versions and
+    // ask the user to pick. If none have been published yet, fall through to the draft.
+    this.api.listVersions(id).subscribe({
+      next: (list) => {
+        if (list.length === 0) {
+          this.loadDraft(id);
+          return;
+        }
+        // Newest first so the picker pre-emphasises the latest published version.
+        const sorted = [...list].sort((a, b) => b.versionNumber - a.versionNumber);
+        this.versions.set(sorted);
+        this.state.set('choose-version');
+      },
+      error: (err: ProblemDetail) => this.failWith(err),
+    });
+  }
+
+  private loadDraft(id: string): void {
+    this.api.get(id).subscribe({
+      next: (q) => {
+        this.questionnaire.set(q);
+        this.startSession(id);
+      },
+      error: (err: ProblemDetail) => this.failWith(err),
+    });
+  }
+
+  protected pickVersion(versionNumber: number): void {
+    // Replace the URL so the choice is bookmarkable and re-running the page picks up
+    // the same version automatically.
+    this.router.navigate([], {
+      queryParams: { versionNumber },
+      queryParamsHandling: 'merge',
+      replaceUrl: true,
+    });
+  }
+
+  protected useDraft(): void {
+    this.router.navigate([], {
+      queryParams: { draft: 'true' },
+      queryParamsHandling: 'merge',
+      replaceUrl: true,
+    });
   }
 
   private startSession(questionnaireId: string): void {
