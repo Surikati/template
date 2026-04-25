@@ -16,7 +16,7 @@
     <description>Users (Keycloak projection), roles, system configuration.</description>
 
     <properties>
-        <keycloak-admin-client.version>26.0.2</keycloak-admin-client.version>
+        <keycloak-admin-client.version>26.0.9</keycloak-admin-client.version>
     </properties>
 
     <dependencies>
