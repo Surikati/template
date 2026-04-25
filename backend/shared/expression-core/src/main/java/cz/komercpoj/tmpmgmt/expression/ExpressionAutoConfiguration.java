@@ -7,9 +7,9 @@ import org.springframework.context.annotation.Bean;
 @AutoConfiguration
 public class ExpressionAutoConfiguration {
 
-    @Bean
-    @ConditionalOnMissingBean
-    public ExpressionEvaluator expressionEvaluator() {
-        return new AntlrExpressionEvaluator();
-    }
+  @Bean
+  @ConditionalOnMissingBean
+  public ExpressionEvaluator expressionEvaluator() {
+    return new AntlrExpressionEvaluator();
+  }
 }

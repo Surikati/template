@@ -9,26 +9,25 @@ import java.util.Map;
  */
 public class SimpleExpressionEvaluator implements ExpressionEvaluator {
 
-    @Override
-    public Object evaluate(String expression, Map<String, Object> data) {
-        throw new ExpressionException(
-                "expression.not_implemented",
-                "SimpleExpressionEvaluator does not evaluate. Wire the ANTLR-based evaluator.");
-    }
+  @Override
+  public Object evaluate(String expression, Map<String, Object> data) {
+    throw new ExpressionException(
+        "expression.not_implemented",
+        "SimpleExpressionEvaluator does not evaluate. Wire the ANTLR-based evaluator.");
+  }
 
-    @Override
-    public boolean evaluateBoolean(String expression, Map<String, Object> data) {
-        Object v = evaluate(expression, data);
-        if (v instanceof Boolean b) return b;
-        throw new ExpressionException(
-                "expression.not_boolean",
-                "Expression did not evaluate to a boolean: " + expression);
-    }
+  @Override
+  public boolean evaluateBoolean(String expression, Map<String, Object> data) {
+    Object v = evaluate(expression, data);
+    if (v instanceof Boolean b) return b;
+    throw new ExpressionException(
+        "expression.not_boolean", "Expression did not evaluate to a boolean: " + expression);
+  }
 
-    @Override
-    public void validate(String expression) {
-        if (expression == null || expression.isBlank()) {
-            throw new ExpressionException("expression.empty", "Expression must not be empty.");
-        }
+  @Override
+  public void validate(String expression) {
+    if (expression == null || expression.isBlank()) {
+      throw new ExpressionException("expression.empty", "Expression must not be empty.");
     }
+  }
 }

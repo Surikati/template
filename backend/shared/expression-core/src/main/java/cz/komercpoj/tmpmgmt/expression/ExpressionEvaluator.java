@@ -11,18 +11,18 @@ import java.util.Map;
  */
 public interface ExpressionEvaluator {
 
-    /**
-     * Evaluate {@code expression} against the given data context.
-     *
-     * @param expression source expression, e.g. {@code order.total > 1000 && !client.vip}
-     * @param data hierarchical data accessible via dot notation
-     * @return result as {@link Object} (Boolean, Number, String, or null)
-     */
-    Object evaluate(String expression, Map<String, Object> data);
+  /**
+   * Evaluate {@code expression} against the given data context.
+   *
+   * @param expression source expression, e.g. {@code order.total > 1000 && !client.vip}
+   * @param data hierarchical data accessible via dot notation
+   * @return result as {@link Object} (Boolean, Number, String, or null)
+   */
+  Object evaluate(String expression, Map<String, Object> data);
 
-    /** Convenience — throws {@link ExpressionException} if the result is not a Boolean. */
-    boolean evaluateBoolean(String expression, Map<String, Object> data);
+  /** Convenience — throws {@link ExpressionException} if the result is not a Boolean. */
+  boolean evaluateBoolean(String expression, Map<String, Object> data);
 
-    /** Parse-only validation — used when publishing template versions. */
-    void validate(String expression);
+  /** Parse-only validation — used when publishing template versions. */
+  void validate(String expression);
 }
