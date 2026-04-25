@@ -104,10 +104,14 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Lowercase repository name
+        # ghcr.io rejects mixed-case repo paths (Surikati/template ⇒ surikati/template).
+        run: echo "REPO_LC=$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+
       - name: Build & push image (${{ matrix.service }})
         working-directory: backend
         run: |
           ./mvnw -B -pl services/${{ matrix.service }} -am \
-            -Djib.to.image=ghcr.io/${{ github.repository }}/${{ matrix.service }}:${{ github.sha }} \
+            -Djib.to.image=ghcr.io/$REPO_LC/${{ matrix.service }}:${{ github.sha }} \
             -Djib.to.tags=latest \
             compile jib:build
