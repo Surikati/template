@@ -124,7 +124,7 @@ public class DocumentService {
     try {
       minio.putObject(
           PutObjectArgs.builder().bucket(minioProps.bucket()).object(key).stream(
-                  new ByteArrayInputStream(content), content.length, -1)
+                  new ByteArrayInputStream(content), (long) content.length, -1L)
               .contentType(format.mimeType())
               .build());
     } catch (Exception e) {
