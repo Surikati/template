@@ -16,7 +16,7 @@
     <description>Generated document metadata + MinIO file references.</description>
 
     <properties>
-        <minio.version>8.5.12</minio.version>
+        <minio.version>9.0.0</minio.version>
     </properties>
 
     <dependencies>
