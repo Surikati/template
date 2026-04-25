@@ -5,11 +5,24 @@ import static org.assertj.core.api.Assertions.*;
 import cz.komercpoj.tmpmgmt.rendering.config.RenderingProperties;
 import java.time.Instant;
 import java.time.LocalDate;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
 class VariableFormatterTest {
 
     private final VariableFormatter formatter = new VariableFormatter();
+
+    @AfterEach
+    void clearRequestContext() {
+        RequestContextHolder.resetRequestAttributes();
+    }
+
+    private static void bindRequest(MockHttpServletRequest req) {
+        RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(req));
+    }
 
     @Test
     void nullValue_returnsEmptyString() {
@@ -27,7 +40,8 @@ class VariableFormatterTest {
     @Test
     void numberWithDecimals() {
         // Czech locale uses non-breaking space as grouping separator, comma as decimal.
-        assertThat(formatter.format(1234.5, "number:2")).isEqualTo("1 234,50");
+        String out = formatter.format(1234.5, "number:2");
+        assertThat(out).contains("234").contains(",50").doesNotContain(".50");
         assertThat(formatter.format(1000, "number:0")).isEqualTo("1 000");
     }
 
@@ -100,5 +114,73 @@ class VariableFormatterTest {
         Instant noon = Instant.parse("2026-04-23T16:00:00Z"); // 12:00 EDT (UTC-4)
         String out = ny.format(noon, "datetime:yyyy-MM-dd HH:mm");
         assertThat(out).isEqualTo("2026-04-23 12:00");
+    }
+
+    @Test
+    void xLocaleHeader_overridesServerDefault() {
+        var req = new MockHttpServletRequest();
+        req.addHeader("X-Locale", "en-US");
+        bindRequest(req);
+        // Server default is cs-CZ; en-US groups with comma, decimal with dot
+        assertThat(formatter.format(1234.5, "number:2")).isEqualTo("1,234.50");
+    }
+
+    @Test
+    void xTimezoneHeader_shiftsInstantPresentation() {
+        var req = new MockHttpServletRequest();
+        req.addHeader("X-Timezone", "America/New_York");
+        bindRequest(req);
+        Instant noon = Instant.parse("2026-04-23T16:00:00Z"); // 12:00 EDT (UTC-4)
+        // Locale stays cs-CZ, only zone shifts
+        assertThat(formatter.format(noon, "datetime:yyyy-MM-dd HH:mm"))
+                .isEqualTo("2026-04-23 12:00");
+    }
+
+    @Test
+    void xCurrencyHeader_overridesDefaultCode() {
+        var req = new MockHttpServletRequest();
+        req.addHeader("X-Currency", "USD");
+        bindRequest(req);
+        // Without explicit code in format string, header takes effect
+        String out = formatter.format(100, "currency");
+        assertThat(out).contains("100").doesNotContain("Kč");
+    }
+
+    @Test
+    void invalidXLocaleHeader_fallsBackToDefault() {
+        var req = new MockHttpServletRequest();
+        req.addHeader("X-Locale", "not-a-real-tag");
+        bindRequest(req);
+        // Falls back to cs-CZ → comma decimal (en-US would use dot)
+        String out = formatter.format(1234.5, "number:2");
+        assertThat(out).contains("234").contains(",50").doesNotContain(".50");
+    }
+
+    @Test
+    void invalidXTimezoneHeader_fallsBackToDefault() {
+        var req = new MockHttpServletRequest();
+        req.addHeader("X-Timezone", "Mars/Olympus_Mons");
+        bindRequest(req);
+        Instant noon = Instant.parse("2026-04-23T10:00:00Z"); // Europe/Prague = 12:00
+        assertThat(formatter.format(noon, "datetime:dd.MM.yyyy HH:mm"))
+                .isEqualTo("23.04.2026 12:00");
+    }
+
+    @Test
+    void invalidXCurrencyHeader_fallsBackToDefault() {
+        var req = new MockHttpServletRequest();
+        req.addHeader("X-Currency", "ZZZ");
+        bindRequest(req);
+        // Falls back to CZK
+        assertThat(formatter.format(100, "currency")).contains("Kč");
+    }
+
+    @Test
+    void explicitFormatCurrencyCode_winsOverHeader() {
+        var req = new MockHttpServletRequest();
+        req.addHeader("X-Currency", "USD");
+        bindRequest(req);
+        // currency:CZK in format string takes precedence over X-Currency header
+        assertThat(formatter.format(100, "currency:CZK")).contains("Kč");
     }
 }

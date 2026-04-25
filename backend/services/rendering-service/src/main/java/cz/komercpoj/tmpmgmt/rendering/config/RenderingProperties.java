@@ -3,9 +3,9 @@ package cz.komercpoj.tmpmgmt.rendering.config;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
- * Locale + PDF font configuration. {@code cs_CZ} / {@code Europe/Prague} matches MVP
- * single-tenant deployment; multi-tenant rollouts should override per-request (via JWT claim
- * or {@code X-Locale} header) — see {@code VariableFormatter} TODO.
+ * Locale + PDF font configuration. {@code cs_CZ} / {@code Europe/Prague} are server-wide
+ * defaults; per-request callers can override via {@code X-Locale}, {@code X-Timezone},
+ * {@code X-Currency} headers — see {@link cz.komercpoj.tmpmgmt.rendering.application.VariableFormatter}.
  *
  * <p>{@code pdfFontPath} points to a Unicode TTF (e.g. DejaVuSans, NotoSans) bundled by the
  * deployer — this repo intentionally does not ship a binary font asset. If unset, PDF
