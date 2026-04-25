@@ -8,10 +8,11 @@ import org.springframework.data.jpa.repository.Query;
 
 public interface ClauseVersionRepository extends JpaRepository<ClauseVersionEntity, UUID> {
 
-    List<ClauseVersionEntity> findByClauseIdOrderByVersionNumberDesc(UUID clauseId);
+  List<ClauseVersionEntity> findByClauseIdOrderByVersionNumberDesc(UUID clauseId);
 
-    Optional<ClauseVersionEntity> findByClauseIdAndVersionNumber(UUID clauseId, int versionNumber);
+  Optional<ClauseVersionEntity> findByClauseIdAndVersionNumber(UUID clauseId, int versionNumber);
 
-    @Query("SELECT COALESCE(MAX(v.versionNumber), 0) FROM ClauseVersionEntity v WHERE v.clauseId = :clauseId")
-    int findMaxVersionNumber(UUID clauseId);
+  @Query(
+      "SELECT COALESCE(MAX(v.versionNumber), 0) FROM ClauseVersionEntity v WHERE v.clauseId = :clauseId")
+  int findMaxVersionNumber(UUID clauseId);
 }

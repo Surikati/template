@@ -6,11 +6,11 @@ import java.time.Instant;
 import java.util.UUID;
 
 public record SessionResponse(
-        UUID id,
-        UUID questionnaireId,
-        SessionState state,
-        UUID startedBy,
-        Instant startedAt,
-        Instant completedAt,
-        JsonNode answers,
-        UUID currentSectionId) {}
+    UUID id,
+    UUID questionnaireId,
+    SessionState state,
+    UUID startedBy,
+    Instant startedAt,
+    Instant completedAt,
+    JsonNode answers,
+    UUID currentSectionId) {}

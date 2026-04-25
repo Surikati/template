@@ -23,23 +23,23 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/v1/questionnaires/evaluate-rules")
 public class RuleEvaluationController {
 
-    private final ExpressionEvaluator evaluator;
+  private final ExpressionEvaluator evaluator;
 
-    public RuleEvaluationController(ExpressionEvaluator evaluator) {
-        this.evaluator = evaluator;
-    }
+  public RuleEvaluationController(ExpressionEvaluator evaluator) {
+    this.evaluator = evaluator;
+  }
 
-    @PostMapping
-    public EvaluateRulesResponse evaluate(@Valid @RequestBody EvaluateRulesRequest req) {
-        Map<String, RuleResult> results = new LinkedHashMap<>();
-        for (var rule : req.rules()) {
-            try {
-                boolean value = evaluator.evaluateBoolean(rule.expression(), req.context());
-                results.put(rule.key(), new RuleResult(value, null));
-            } catch (RuntimeException e) {
-                results.put(rule.key(), new RuleResult(false, e.getMessage()));
-            }
-        }
-        return new EvaluateRulesResponse(results);
+  @PostMapping
+  public EvaluateRulesResponse evaluate(@Valid @RequestBody EvaluateRulesRequest req) {
+    Map<String, RuleResult> results = new LinkedHashMap<>();
+    for (var rule : req.rules()) {
+      try {
+        boolean value = evaluator.evaluateBoolean(rule.expression(), req.context());
+        results.put(rule.key(), new RuleResult(value, null));
+      } catch (RuntimeException e) {
+        results.put(rule.key(), new RuleResult(false, e.getMessage()));
+      }
     }
+    return new EvaluateRulesResponse(results);
+  }
 }

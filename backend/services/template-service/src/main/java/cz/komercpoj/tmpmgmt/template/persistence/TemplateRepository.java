@@ -9,11 +9,12 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface TemplateRepository extends JpaRepository<TemplateEntity, UUID> {
 
-    Optional<TemplateEntity> findBySlug(String slug);
+  Optional<TemplateEntity> findBySlug(String slug);
 
-    boolean existsBySlug(String slug);
+  boolean existsBySlug(String slug);
 
-    Page<TemplateEntity> findByStatus(TemplateStatus status, Pageable pageable);
+  Page<TemplateEntity> findByStatus(TemplateStatus status, Pageable pageable);
 
-    Page<TemplateEntity> findByStatusAndCategory(TemplateStatus status, String category, Pageable pageable);
+  Page<TemplateEntity> findByStatusAndCategory(
+      TemplateStatus status, String category, Pageable pageable);
 }

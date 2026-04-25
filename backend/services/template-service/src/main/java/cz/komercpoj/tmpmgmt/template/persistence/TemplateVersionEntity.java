@@ -22,49 +22,48 @@ import org.hibernate.type.SqlTypes;
 @NoArgsConstructor
 public class TemplateVersionEntity {
 
-    @Id
-    private UUID id;
+  @Id private UUID id;
 
-    @Column(name = "template_id", nullable = false)
-    private UUID templateId;
+  @Column(name = "template_id", nullable = false)
+  private UUID templateId;
 
-    @Column(name = "version_number", nullable = false)
-    private int versionNumber;
+  @Column(name = "version_number", nullable = false)
+  private int versionNumber;
 
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Column(nullable = false, columnDefinition = "jsonb")
-    private JsonNode content;
+  @JdbcTypeCode(SqlTypes.JSON)
+  @Column(nullable = false, columnDefinition = "jsonb")
+  private JsonNode content;
 
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "variables_schema", nullable = false, columnDefinition = "jsonb")
-    private JsonNode variablesSchema;
+  @JdbcTypeCode(SqlTypes.JSON)
+  @Column(name = "variables_schema", nullable = false, columnDefinition = "jsonb")
+  private JsonNode variablesSchema;
 
-    @Column(name = "change_note", columnDefinition = "TEXT")
-    private String changeNote;
+  @Column(name = "change_note", columnDefinition = "TEXT")
+  private String changeNote;
 
-    @Column(name = "published_at", nullable = false)
-    private Instant publishedAt;
+  @Column(name = "published_at", nullable = false)
+  private Instant publishedAt;
 
-    @Column(name = "published_by", nullable = false)
-    private UUID publishedBy;
+  @Column(name = "published_by", nullable = false)
+  private UUID publishedBy;
 
-    public static TemplateVersionEntity publish(
-            UUID id,
-            UUID templateId,
-            int versionNumber,
-            JsonNode content,
-            JsonNode variablesSchema,
-            String changeNote,
-            UUID publishedBy) {
-        TemplateVersionEntity v = new TemplateVersionEntity();
-        v.id = id;
-        v.templateId = templateId;
-        v.versionNumber = versionNumber;
-        v.content = content;
-        v.variablesSchema = variablesSchema;
-        v.changeNote = changeNote;
-        v.publishedAt = Instant.now();
-        v.publishedBy = publishedBy;
-        return v;
-    }
+  public static TemplateVersionEntity publish(
+      UUID id,
+      UUID templateId,
+      int versionNumber,
+      JsonNode content,
+      JsonNode variablesSchema,
+      String changeNote,
+      UUID publishedBy) {
+    TemplateVersionEntity v = new TemplateVersionEntity();
+    v.id = id;
+    v.templateId = templateId;
+    v.versionNumber = versionNumber;
+    v.content = content;
+    v.variablesSchema = variablesSchema;
+    v.changeNote = changeNote;
+    v.publishedAt = Instant.now();
+    v.publishedBy = publishedBy;
+    return v;
+  }
 }

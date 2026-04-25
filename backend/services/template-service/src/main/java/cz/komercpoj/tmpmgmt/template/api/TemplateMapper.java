@@ -15,19 +15,19 @@ import org.mapstruct.Named;
 @Mapper(componentModel = "spring")
 public interface TemplateMapper {
 
-    @Mapping(target = "tags", source = "tags", qualifiedByName = "arrayToList")
-    TemplateResponse toResponse(TemplateEntity entity);
+  @Mapping(target = "tags", source = "tags", qualifiedByName = "arrayToList")
+  TemplateResponse toResponse(TemplateEntity entity);
 
-    TemplateDraftResponse toResponse(TemplateDraftEntity draft);
+  TemplateDraftResponse toResponse(TemplateDraftEntity draft);
 
-    TemplateVersionResponse toResponse(TemplateVersionEntity version);
+  TemplateVersionResponse toResponse(TemplateVersionEntity version);
 
-    List<TemplateResponse> toTemplateResponses(List<TemplateEntity> entities);
+  List<TemplateResponse> toTemplateResponses(List<TemplateEntity> entities);
 
-    List<TemplateVersionResponse> toVersionResponses(List<TemplateVersionEntity> entities);
+  List<TemplateVersionResponse> toVersionResponses(List<TemplateVersionEntity> entities);
 
-    @Named("arrayToList")
-    default List<String> arrayToList(String[] array) {
-        return array == null ? List.of() : Arrays.asList(array);
-    }
+  @Named("arrayToList")
+  default List<String> arrayToList(String[] array) {
+    return array == null ? List.of() : Arrays.asList(array);
+  }
 }

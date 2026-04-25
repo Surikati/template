@@ -7,20 +7,20 @@ import java.util.UUID;
 
 public final class DocumentEvents {
 
-    private DocumentEvents() {}
+  private DocumentEvents() {}
 
-    public static final String AGGREGATE_TYPE = "document";
-    public static final String TYPE_GENERATED = "generated";
+  public static final String AGGREGATE_TYPE = "document";
+  public static final String TYPE_GENERATED = "generated";
 
-    public record DocumentGenerated(
-            UUID documentId,
-            UUID templateId,
-            int templateVersionNumber,
-            UUID assemblyJobId,
-            List<FileRef> files,
-            UUID createdBy,
-            Instant occurredAt) {
+  public record DocumentGenerated(
+      UUID documentId,
+      UUID templateId,
+      int templateVersionNumber,
+      UUID assemblyJobId,
+      List<FileRef> files,
+      UUID createdBy,
+      Instant occurredAt) {
 
-        public record FileRef(FileFormat format, long sizeBytes, String sha256) {}
-    }
+    public record FileRef(FileFormat format, long sizeBytes, String sha256) {}
+  }
 }

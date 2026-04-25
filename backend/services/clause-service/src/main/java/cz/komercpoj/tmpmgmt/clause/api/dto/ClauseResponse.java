@@ -6,13 +6,13 @@ import java.util.List;
 import java.util.UUID;
 
 public record ClauseResponse(
-        UUID id,
-        String slug,
-        String name,
-        String description,
-        String category,
-        List<String> tags,
-        ClauseStatus status,
-        UUID ownerUserId,
-        Instant createdAt,
-        Instant updatedAt) {}
+    UUID id,
+    String slug,
+    String name,
+    String description,
+    String category,
+    List<String> tags,
+    ClauseStatus status,
+    UUID ownerUserId,
+    Instant createdAt,
+    Instant updatedAt) {}

@@ -11,34 +11,38 @@ import org.springframework.web.bind.annotation.RequestBody;
 @FeignClient(name = "document-service", url = "${tmpmgmt.clients.document-service-url}")
 public interface DocumentServiceClient {
 
-    @PostMapping("/api/v1/documents")
-    DocumentResponse upload(@RequestBody UploadDocumentRequest request);
+  @PostMapping("/api/v1/documents")
+  DocumentResponse upload(@RequestBody UploadDocumentRequest request);
 
-    enum FileFormat { DOCX, PDF, HTML }
+  enum FileFormat {
+    DOCX,
+    PDF,
+    HTML
+  }
 
-    record FileInputDto(FileFormat format, String contentBase64) {}
+  record FileInputDto(FileFormat format, String contentBase64) {}
 
-    record UploadDocumentRequest(
-            UUID templateId,
-            int templateVersionNumber,
-            UUID assemblyJobId,
-            JsonNode inputDataSnapshot,
-            List<FileInputDto> files) {}
+  record UploadDocumentRequest(
+      UUID templateId,
+      int templateVersionNumber,
+      UUID assemblyJobId,
+      JsonNode inputDataSnapshot,
+      List<FileInputDto> files) {}
 
-    record FileReferenceResponse(
-            UUID id,
-            FileFormat format,
-            long sizeBytes,
-            String sha256,
-            String downloadUrl,
-            Instant createdAt) {}
+  record FileReferenceResponse(
+      UUID id,
+      FileFormat format,
+      long sizeBytes,
+      String sha256,
+      String downloadUrl,
+      Instant createdAt) {}
 
-    record DocumentResponse(
-            UUID id,
-            UUID templateId,
-            int templateVersionNumber,
-            UUID assemblyJobId,
-            UUID createdBy,
-            Instant createdAt,
-            List<FileReferenceResponse> files) {}
+  record DocumentResponse(
+      UUID id,
+      UUID templateId,
+      int templateVersionNumber,
+      UUID assemblyJobId,
+      UUID createdBy,
+      Instant createdAt,
+      List<FileReferenceResponse> files) {}
 }

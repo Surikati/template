@@ -7,7 +7,7 @@ import jakarta.validation.constraints.PositiveOrZero;
 import java.util.List;
 
 public record SectionInputDto(
-        @PositiveOrZero int ordinal,
-        @NotBlank String title,
-        String visibilityRule,
-        @NotNull @Valid List<QuestionInputDto> questions) {}
+    @PositiveOrZero int ordinal,
+    @NotBlank String title,
+    String visibilityRule,
+    @NotNull @Valid List<QuestionInputDto> questions) {}

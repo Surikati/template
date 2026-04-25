@@ -6,13 +6,13 @@ import java.util.List;
 import java.util.UUID;
 
 public record TemplateResponse(
-        UUID id,
-        String slug,
-        String name,
-        String description,
-        String category,
-        List<String> tags,
-        TemplateStatus status,
-        UUID ownerUserId,
-        Instant createdAt,
-        Instant updatedAt) {}
+    UUID id,
+    String slug,
+    String name,
+    String description,
+    String category,
+    List<String> tags,
+    TemplateStatus status,
+    UUID ownerUserId,
+    Instant createdAt,
+    Instant updatedAt) {}

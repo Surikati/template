@@ -15,44 +15,44 @@ import org.springframework.web.bind.annotation.*;
 @PreAuthorize("hasRole('ADMIN')")
 public class RoleController {
 
-    private final RoleAdminService service;
+  private final RoleAdminService service;
 
-    public RoleController(RoleAdminService service) {
-        this.service = service;
-    }
+  public RoleController(RoleAdminService service) {
+    this.service = service;
+  }
 
-    @GetMapping("/api/v1/roles")
-    public List<RoleResponse> listDefinitions() {
-        return service.listRoleDefinitions().stream()
-                .map(r -> new RoleResponse(r.getCode(), r.getDisplayName(), r.getDescription()))
-                .toList();
-    }
+  @GetMapping("/api/v1/roles")
+  public List<RoleResponse> listDefinitions() {
+    return service.listRoleDefinitions().stream()
+        .map(r -> new RoleResponse(r.getCode(), r.getDisplayName(), r.getDescription()))
+        .toList();
+  }
 
-    @GetMapping("/api/v1/users/{userId}/roles")
-    public List<UserRoleResponse> listUserRoles(@PathVariable UUID userId) {
-        return service.listUserRoles(userId).stream()
-                .map(ur -> new UserRoleResponse(
-                        ur.getId().getUserId(),
-                        ur.getId().getRoleCode(),
-                        ur.getGrantedAt(),
-                        ur.getGrantedBy()))
-                .toList();
-    }
+  @GetMapping("/api/v1/users/{userId}/roles")
+  public List<UserRoleResponse> listUserRoles(@PathVariable UUID userId) {
+    return service.listUserRoles(userId).stream()
+        .map(
+            ur ->
+                new UserRoleResponse(
+                    ur.getId().getUserId(),
+                    ur.getId().getRoleCode(),
+                    ur.getGrantedAt(),
+                    ur.getGrantedBy()))
+        .toList();
+  }
 
-    @PostMapping("/api/v1/users/{userId}/roles/{roleCode}")
-    public UserRoleResponse grant(
-            @PathVariable UUID userId,
-            @PathVariable String roleCode,
-            @AuthenticationPrincipal Jwt jwt) {
-        var ur = service.grant(userId, roleCode, UUID.fromString(jwt.getSubject()));
-        return new UserRoleResponse(
-                ur.getId().getUserId(), ur.getId().getRoleCode(),
-                ur.getGrantedAt(), ur.getGrantedBy());
-    }
+  @PostMapping("/api/v1/users/{userId}/roles/{roleCode}")
+  public UserRoleResponse grant(
+      @PathVariable UUID userId, @PathVariable String roleCode, @AuthenticationPrincipal Jwt jwt) {
+    var ur = service.grant(userId, roleCode, UUID.fromString(jwt.getSubject()));
+    return new UserRoleResponse(
+        ur.getId().getUserId(), ur.getId().getRoleCode(),
+        ur.getGrantedAt(), ur.getGrantedBy());
+  }
 
-    @DeleteMapping("/api/v1/users/{userId}/roles/{roleCode}")
-    public ResponseEntity<Void> revoke(@PathVariable UUID userId, @PathVariable String roleCode) {
-        service.revoke(userId, roleCode);
-        return ResponseEntity.noContent().build();
-    }
+  @DeleteMapping("/api/v1/users/{userId}/roles/{roleCode}")
+  public ResponseEntity<Void> revoke(@PathVariable UUID userId, @PathVariable String roleCode) {
+    service.revoke(userId, roleCode);
+    return ResponseEntity.noContent().build();
+  }
 }

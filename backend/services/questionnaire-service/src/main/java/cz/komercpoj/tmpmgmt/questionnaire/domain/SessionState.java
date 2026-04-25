@@ -1,7 +1,7 @@
 package cz.komercpoj.tmpmgmt.questionnaire.domain;
 
 public enum SessionState {
-    IN_PROGRESS,
-    COMPLETED,
-    ABANDONED
+  IN_PROGRESS,
+  COMPLETED,
+  ABANDONED
 }

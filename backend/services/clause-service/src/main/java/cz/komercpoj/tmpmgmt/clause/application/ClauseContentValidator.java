@@ -17,70 +17,72 @@ import org.springframework.stereotype.Component;
 @Component
 public class ClauseContentValidator {
 
-    private final ExpressionEvaluator expressions;
+  private final ExpressionEvaluator expressions;
 
-    public ClauseContentValidator(ExpressionEvaluator expressions) {
-        this.expressions = expressions;
-    }
+  public ClauseContentValidator(ExpressionEvaluator expressions) {
+    this.expressions = expressions;
+  }
 
-    public void validate(JsonNode content) {
-        List<String> violations = new ArrayList<>();
-        validateRoot(content, violations);
-        if (!violations.isEmpty()) {
-            throw new ValidationException(
-                    "clause.content_invalid", "Clause content is invalid.", violations);
-        }
+  public void validate(JsonNode content) {
+    List<String> violations = new ArrayList<>();
+    validateRoot(content, violations);
+    if (!violations.isEmpty()) {
+      throw new ValidationException(
+          "clause.content_invalid", "Clause content is invalid.", violations);
     }
+  }
 
-    private void validateRoot(JsonNode content, List<String> violations) {
-        if (content == null || !content.isObject()) {
-            violations.add("content: must be a JSON object.");
-            return;
-        }
-        String type = content.path("type").asText(null);
-        if (!"fragment".equals(type)) {
-            violations.add("content.type: expected 'fragment', got '" + type + "'.");
-        }
-        JsonNode children = content.path("content");
-        if (!children.isArray()) {
-            violations.add("content.content: expected an array.");
-            return;
-        }
-        walk(children, violations);
+  private void validateRoot(JsonNode content, List<String> violations) {
+    if (content == null || !content.isObject()) {
+      violations.add("content: must be a JSON object.");
+      return;
     }
+    String type = content.path("type").asText(null);
+    if (!"fragment".equals(type)) {
+      violations.add("content.type: expected 'fragment', got '" + type + "'.");
+    }
+    JsonNode children = content.path("content");
+    if (!children.isArray()) {
+      violations.add("content.content: expected an array.");
+      return;
+    }
+    walk(children, violations);
+  }
 
-    private void walk(JsonNode nodes, List<String> violations) {
-        Iterator<JsonNode> it = nodes.elements();
-        while (it.hasNext()) {
-            JsonNode node = it.next();
-            String type = node.path("type").asText("");
-            switch (type) {
-                case "conditionBlock" -> validateExpr(node, "attrs.when", violations);
-                case "repeatBlock" -> validateExpr(node, "attrs.in", violations);
-                default -> { /* other node types require no expression check */ }
-            }
-            JsonNode child = node.path("content");
-            if (child.isArray()) {
-                walk(child, violations);
-            }
+  private void walk(JsonNode nodes, List<String> violations) {
+    Iterator<JsonNode> it = nodes.elements();
+    while (it.hasNext()) {
+      JsonNode node = it.next();
+      String type = node.path("type").asText("");
+      switch (type) {
+        case "conditionBlock" -> validateExpr(node, "attrs.when", violations);
+        case "repeatBlock" -> validateExpr(node, "attrs.in", violations);
+        default -> {
+          /* other node types require no expression check */
         }
+      }
+      JsonNode child = node.path("content");
+      if (child.isArray()) {
+        walk(child, violations);
+      }
     }
+  }
 
-    private void validateExpr(JsonNode node, String path, List<String> violations) {
-        String[] segments = path.split("\\.");
-        JsonNode cursor = node;
-        for (String seg : segments) {
-            cursor = cursor.path(seg);
-        }
-        String expr = cursor.asText(null);
-        if (expr == null) {
-            violations.add(path + ": missing expression.");
-            return;
-        }
-        try {
-            expressions.validate(expr);
-        } catch (ExpressionException ex) {
-            violations.add(path + ": " + ex.getMessage());
-        }
+  private void validateExpr(JsonNode node, String path, List<String> violations) {
+    String[] segments = path.split("\\.");
+    JsonNode cursor = node;
+    for (String seg : segments) {
+      cursor = cursor.path(seg);
     }
+    String expr = cursor.asText(null);
+    if (expr == null) {
+      violations.add(path + ": missing expression.");
+      return;
+    }
+    try {
+      expressions.validate(expr);
+    } catch (ExpressionException ex) {
+      violations.add(path + ": " + ex.getMessage());
+    }
+  }
 }

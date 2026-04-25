@@ -12,17 +12,17 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/v1/search")
 public class SearchController {
 
-    private final SearchService service;
+  private final SearchService service;
 
-    public SearchController(SearchService service) {
-        this.service = service;
-    }
+  public SearchController(SearchService service) {
+    this.service = service;
+  }
 
-    @GetMapping
-    public List<SearchHit> search(
-            @RequestParam String q,
-            @RequestParam(required = false, defaultValue = "all") String type,
-            @RequestParam(required = false, defaultValue = "20") int limit) {
-        return service.search(q, type, limit);
-    }
+  @GetMapping
+  public List<SearchHit> search(
+      @RequestParam String q,
+      @RequestParam(required = false, defaultValue = "all") String type,
+      @RequestParam(required = false, defaultValue = "20") int limit) {
+    return service.search(q, type, limit);
+  }
 }

@@ -9,8 +9,8 @@ import java.util.List;
 import java.util.UUID;
 
 public record UploadDocumentRequest(
-        @NotNull UUID templateId,
-        @Positive int templateVersionNumber,
-        @NotNull UUID assemblyJobId,
-        @NotNull JsonNode inputDataSnapshot,
-        @NotEmpty @Valid List<FileInputDto> files) {}
+    @NotNull UUID templateId,
+    @Positive int templateVersionNumber,
+    @NotNull UUID assemblyJobId,
+    @NotNull JsonNode inputDataSnapshot,
+    @NotEmpty @Valid List<FileInputDto> files) {}

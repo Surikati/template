@@ -14,29 +14,31 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/v1/render")
 public class RenderingController {
 
-    private final DocxRenderer docxRenderer;
-    private final HtmlRenderer htmlRenderer;
-    private final PdfRenderer pdfRenderer;
+  private final DocxRenderer docxRenderer;
+  private final HtmlRenderer htmlRenderer;
+  private final PdfRenderer pdfRenderer;
 
-    public RenderingController(
-            DocxRenderer docxRenderer, HtmlRenderer htmlRenderer, PdfRenderer pdfRenderer) {
-        this.docxRenderer = docxRenderer;
-        this.htmlRenderer = htmlRenderer;
-        this.pdfRenderer = pdfRenderer;
-    }
+  public RenderingController(
+      DocxRenderer docxRenderer, HtmlRenderer htmlRenderer, PdfRenderer pdfRenderer) {
+    this.docxRenderer = docxRenderer;
+    this.htmlRenderer = htmlRenderer;
+    this.pdfRenderer = pdfRenderer;
+  }
 
-    @PostMapping
-    public RenderResponse render(@Valid @RequestBody RenderRequest req) {
-        return switch (req.format()) {
-            case DOCX -> new RenderResponse(
-                    RenderFormat.DOCX, "document.docx",
-                    docxRenderer.render(req.content(), req.data()));
-            case PDF -> new RenderResponse(
-                    RenderFormat.PDF, "document.pdf",
-                    pdfRenderer.render(req.content(), req.data()));
-            case HTML -> new RenderResponse(
-                    RenderFormat.HTML, "preview.html",
-                    htmlRenderer.render(req.content(), req.data()).getBytes(StandardCharsets.UTF_8));
-        };
-    }
+  @PostMapping
+  public RenderResponse render(@Valid @RequestBody RenderRequest req) {
+    return switch (req.format()) {
+      case DOCX ->
+          new RenderResponse(
+              RenderFormat.DOCX, "document.docx", docxRenderer.render(req.content(), req.data()));
+      case PDF ->
+          new RenderResponse(
+              RenderFormat.PDF, "document.pdf", pdfRenderer.render(req.content(), req.data()));
+      case HTML ->
+          new RenderResponse(
+              RenderFormat.HTML,
+              "preview.html",
+              htmlRenderer.render(req.content(), req.data()).getBytes(StandardCharsets.UTF_8));
+    };
+  }
 }

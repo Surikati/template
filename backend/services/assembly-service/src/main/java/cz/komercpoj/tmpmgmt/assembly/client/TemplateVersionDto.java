@@ -6,11 +6,11 @@ import java.util.UUID;
 
 /** Projection of the field shape returned by template-service GET /versions/{v}. */
 public record TemplateVersionDto(
-        UUID id,
-        UUID templateId,
-        int versionNumber,
-        JsonNode content,
-        JsonNode variablesSchema,
-        String changeNote,
-        Instant publishedAt,
-        UUID publishedBy) {}
+    UUID id,
+    UUID templateId,
+    int versionNumber,
+    JsonNode content,
+    JsonNode variablesSchema,
+    String changeNote,
+    Instant publishedAt,
+    UUID publishedBy) {}

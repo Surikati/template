@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.Map;
 
 public record EvaluateRulesRequest(
-        @NotNull @Valid List<RuleInput> rules, @NotNull Map<String, Object> context) {
+    @NotNull @Valid List<RuleInput> rules, @NotNull Map<String, Object> context) {
 
-    public record RuleInput(@NotBlank String key, @NotBlank String expression) {}
+  public record RuleInput(@NotBlank String key, @NotBlank String expression) {}
 }

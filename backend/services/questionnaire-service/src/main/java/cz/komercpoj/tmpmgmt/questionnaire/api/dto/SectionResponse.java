@@ -4,4 +4,4 @@ import java.util.List;
 import java.util.UUID;
 
 public record SectionResponse(
-        UUID id, int ordinal, String title, String visibilityRule, List<QuestionResponse> questions) {}
+    UUID id, int ordinal, String title, String visibilityRule, List<QuestionResponse> questions) {}

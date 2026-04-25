@@ -9,16 +9,16 @@ import org.springframework.web.bind.annotation.RequestBody;
 @FeignClient(name = "rendering-service", url = "${tmpmgmt.clients.rendering-service-url}")
 public interface RenderingServiceClient {
 
-    @PostMapping("/api/v1/render")
-    RenderResponse render(@RequestBody RenderRequest request);
+  @PostMapping("/api/v1/render")
+  RenderResponse render(@RequestBody RenderRequest request);
 
-    enum RenderFormat {
-        DOCX,
-        PDF,
-        HTML
-    }
+  enum RenderFormat {
+    DOCX,
+    PDF,
+    HTML
+  }
 
-    record RenderRequest(JsonNode content, Map<String, Object> data, RenderFormat format) {}
+  record RenderRequest(JsonNode content, Map<String, Object> data, RenderFormat format) {}
 
-    record RenderResponse(RenderFormat format, String filename, byte[] content) {}
+  record RenderResponse(RenderFormat format, String filename, byte[] content) {}
 }

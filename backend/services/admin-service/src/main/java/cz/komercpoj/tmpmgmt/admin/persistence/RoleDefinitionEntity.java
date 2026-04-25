@@ -15,13 +15,13 @@ import lombok.Setter;
 @NoArgsConstructor
 public class RoleDefinitionEntity {
 
-    @Id
-    @Column(length = 50)
-    private String code;
+  @Id
+  @Column(length = 50)
+  private String code;
 
-    @Column(name = "display_name", nullable = false, length = 200)
-    private String displayName;
+  @Column(name = "display_name", nullable = false, length = 200)
+  private String displayName;
 
-    @Column(columnDefinition = "TEXT")
-    private String description;
+  @Column(columnDefinition = "TEXT")
+  private String description;
 }

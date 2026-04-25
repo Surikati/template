@@ -6,8 +6,8 @@ import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface QuestionnaireSessionRepository
-        extends JpaRepository<QuestionnaireSessionEntity, UUID> {
+    extends JpaRepository<QuestionnaireSessionEntity, UUID> {
 
-    List<QuestionnaireSessionEntity> findByStartedByAndStateOrderByStartedAtDesc(
-            UUID userId, SessionState state);
+  List<QuestionnaireSessionEntity> findByStartedByAndStateOrderByStartedAtDesc(
+      UUID userId, SessionState state);
 }

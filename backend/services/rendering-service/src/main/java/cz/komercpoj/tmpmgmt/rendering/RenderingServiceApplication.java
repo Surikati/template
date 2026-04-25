@@ -8,7 +8,7 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 @SpringBootApplication
 @EnableConfigurationProperties(RenderingProperties.class)
 public class RenderingServiceApplication {
-    public static void main(String[] args) {
-        SpringApplication.run(RenderingServiceApplication.class, args);
-    }
+  public static void main(String[] args) {
+    SpringApplication.run(RenderingServiceApplication.class, args);
+  }
 }

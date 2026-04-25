@@ -13,17 +13,17 @@ import org.mapstruct.Named;
 @Mapper(componentModel = "spring")
 public interface ClauseMapper {
 
-    @Mapping(target = "tags", source = "tags", qualifiedByName = "arrayToList")
-    ClauseResponse toResponse(ClauseEntity entity);
+  @Mapping(target = "tags", source = "tags", qualifiedByName = "arrayToList")
+  ClauseResponse toResponse(ClauseEntity entity);
 
-    ClauseVersionResponse toResponse(ClauseVersionEntity version);
+  ClauseVersionResponse toResponse(ClauseVersionEntity version);
 
-    List<ClauseResponse> toClauseResponses(List<ClauseEntity> entities);
+  List<ClauseResponse> toClauseResponses(List<ClauseEntity> entities);
 
-    List<ClauseVersionResponse> toVersionResponses(List<ClauseVersionEntity> entities);
+  List<ClauseVersionResponse> toVersionResponses(List<ClauseVersionEntity> entities);
 
-    @Named("arrayToList")
-    default List<String> arrayToList(String[] array) {
-        return array == null ? List.of() : Arrays.asList(array);
-    }
+  @Named("arrayToList")
+  default List<String> arrayToList(String[] array) {
+    return array == null ? List.of() : Arrays.asList(array);
+  }
 }

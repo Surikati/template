@@ -7,7 +7,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface AppUserRepository extends JpaRepository<AppUserEntity, UUID> {
 
-    Optional<AppUserEntity> findByKeycloakSubject(String keycloakSubject);
+  Optional<AppUserEntity> findByKeycloakSubject(String keycloakSubject);
 
-    List<AppUserEntity> findByActiveTrue();
+  List<AppUserEntity> findByActiveTrue();
 }

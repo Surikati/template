@@ -21,77 +21,82 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/v1/clauses")
 public class ClauseController {
 
-    private final ClauseService service;
-    private final ClauseMapper mapper;
+  private final ClauseService service;
+  private final ClauseMapper mapper;
 
-    public ClauseController(ClauseService service, ClauseMapper mapper) {
-        this.service = service;
-        this.mapper = mapper;
-    }
+  public ClauseController(ClauseService service, ClauseMapper mapper) {
+    this.service = service;
+    this.mapper = mapper;
+  }
 
-    @GetMapping
-    public List<ClauseResponse> list() {
-        return mapper.toClauseResponses(service.list());
-    }
+  @GetMapping
+  public List<ClauseResponse> list() {
+    return mapper.toClauseResponses(service.list());
+  }
 
-    @GetMapping("/{id}")
-    public ClauseResponse get(@PathVariable UUID id) {
-        return mapper.toResponse(service.getById(id));
-    }
+  @GetMapping("/{id}")
+  public ClauseResponse get(@PathVariable UUID id) {
+    return mapper.toResponse(service.getById(id));
+  }
 
-    @PostMapping
-    @PreAuthorize("hasAnyRole('ADMIN','CLAUSE_EDITOR')")
-    public ResponseEntity<ClauseResponse> create(
-            @Valid @RequestBody CreateClauseRequest req,
-            @AuthenticationPrincipal Jwt jwt) {
-        var created = service.create(new ClauseCommands.CreateClause(
+  @PostMapping
+  @PreAuthorize("hasAnyRole('ADMIN','CLAUSE_EDITOR')")
+  public ResponseEntity<ClauseResponse> create(
+      @Valid @RequestBody CreateClauseRequest req, @AuthenticationPrincipal Jwt jwt) {
+    var created =
+        service.create(
+            new ClauseCommands.CreateClause(
                 req.slug(), req.name(), req.description(), req.category(), currentUserId(jwt)));
-        return ResponseEntity.created(URI.create("/api/v1/clauses/" + created.getId()))
-                .body(mapper.toResponse(created));
-    }
+    return ResponseEntity.created(URI.create("/api/v1/clauses/" + created.getId()))
+        .body(mapper.toResponse(created));
+  }
 
-    @PutMapping("/{id}/metadata")
-    @PreAuthorize("hasAnyRole('ADMIN','CLAUSE_EDITOR')")
-    public ClauseResponse updateMetadata(
-            @PathVariable UUID id,
-            @Valid @RequestBody UpdateMetadataRequest req,
-            @AuthenticationPrincipal Jwt jwt) {
-        var updated = service.updateMetadata(new ClauseCommands.UpdateMetadata(
+  @PutMapping("/{id}/metadata")
+  @PreAuthorize("hasAnyRole('ADMIN','CLAUSE_EDITOR')")
+  public ClauseResponse updateMetadata(
+      @PathVariable UUID id,
+      @Valid @RequestBody UpdateMetadataRequest req,
+      @AuthenticationPrincipal Jwt jwt) {
+    var updated =
+        service.updateMetadata(
+            new ClauseCommands.UpdateMetadata(
                 id, req.name(), req.description(), req.category(), req.tags(), currentUserId(jwt)));
-        return mapper.toResponse(updated);
-    }
+    return mapper.toResponse(updated);
+  }
 
-    @GetMapping("/{id}/versions")
-    public List<ClauseVersionResponse> listVersions(@PathVariable UUID id) {
-        return mapper.toVersionResponses(service.listVersions(id));
-    }
+  @GetMapping("/{id}/versions")
+  public List<ClauseVersionResponse> listVersions(@PathVariable UUID id) {
+    return mapper.toVersionResponses(service.listVersions(id));
+  }
 
-    @GetMapping("/{id}/versions/{versionNumber}")
-    public ClauseVersionResponse getVersion(@PathVariable UUID id, @PathVariable int versionNumber) {
-        return mapper.toResponse(service.getVersion(id, versionNumber));
-    }
+  @GetMapping("/{id}/versions/{versionNumber}")
+  public ClauseVersionResponse getVersion(@PathVariable UUID id, @PathVariable int versionNumber) {
+    return mapper.toResponse(service.getVersion(id, versionNumber));
+  }
 
-    @PostMapping("/{id}/versions")
-    @PreAuthorize("hasAnyRole('ADMIN','CLAUSE_EDITOR')")
-    public ResponseEntity<ClauseVersionResponse> publishVersion(
-            @PathVariable UUID id,
-            @Valid @RequestBody PublishClauseVersionRequest req,
-            @AuthenticationPrincipal Jwt jwt) {
-        var published = service.publishVersion(new ClauseCommands.PublishVersion(
+  @PostMapping("/{id}/versions")
+  @PreAuthorize("hasAnyRole('ADMIN','CLAUSE_EDITOR')")
+  public ResponseEntity<ClauseVersionResponse> publishVersion(
+      @PathVariable UUID id,
+      @Valid @RequestBody PublishClauseVersionRequest req,
+      @AuthenticationPrincipal Jwt jwt) {
+    var published =
+        service.publishVersion(
+            new ClauseCommands.PublishVersion(
                 id, req.content(), req.changeNote(), currentUserId(jwt)));
-        return ResponseEntity.created(URI.create(
-                        "/api/v1/clauses/" + id + "/versions/" + published.getVersionNumber()))
-                .body(mapper.toResponse(published));
-    }
+    return ResponseEntity.created(
+            URI.create("/api/v1/clauses/" + id + "/versions/" + published.getVersionNumber()))
+        .body(mapper.toResponse(published));
+  }
 
-    @PostMapping("/{id}/archive")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Void> archive(@PathVariable UUID id, @AuthenticationPrincipal Jwt jwt) {
-        service.archive(new ClauseCommands.Archive(id, currentUserId(jwt)));
-        return ResponseEntity.noContent().build();
-    }
+  @PostMapping("/{id}/archive")
+  @PreAuthorize("hasRole('ADMIN')")
+  public ResponseEntity<Void> archive(@PathVariable UUID id, @AuthenticationPrincipal Jwt jwt) {
+    service.archive(new ClauseCommands.Archive(id, currentUserId(jwt)));
+    return ResponseEntity.noContent().build();
+  }
 
-    private UUID currentUserId(Jwt jwt) {
-        return UUID.fromString(jwt.getSubject());
-    }
+  private UUID currentUserId(Jwt jwt) {
+    return UUID.fromString(jwt.getSubject());
+  }
 }

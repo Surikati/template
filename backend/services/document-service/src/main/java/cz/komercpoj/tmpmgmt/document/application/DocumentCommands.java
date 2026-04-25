@@ -7,15 +7,15 @@ import java.util.UUID;
 
 public final class DocumentCommands {
 
-    private DocumentCommands() {}
+  private DocumentCommands() {}
 
-    public record FileInput(FileFormat format, byte[] content) {}
+  public record FileInput(FileFormat format, byte[] content) {}
 
-    public record UploadDocument(
-            UUID templateId,
-            int templateVersionNumber,
-            UUID assemblyJobId,
-            JsonNode inputDataSnapshot,
-            UUID createdBy,
-            List<FileInput> files) {}
+  public record UploadDocument(
+      UUID templateId,
+      int templateVersionNumber,
+      UUID assemblyJobId,
+      JsonNode inputDataSnapshot,
+      UUID createdBy,
+      List<FileInput> files) {}
 }

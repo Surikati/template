@@ -7,7 +7,7 @@ import org.springframework.cloud.openfeign.EnableFeignClients;
 @SpringBootApplication
 @EnableFeignClients
 public class AssemblyServiceApplication {
-    public static void main(String[] args) {
-        SpringApplication.run(AssemblyServiceApplication.class, args);
-    }
+  public static void main(String[] args) {
+    SpringApplication.run(AssemblyServiceApplication.class, args);
+  }
 }

@@ -20,23 +20,23 @@ import org.springframework.web.filter.OncePerRequestFilter;
 @Order(Ordered.HIGHEST_PRECEDENCE)
 public class CorrelationIdFilter extends OncePerRequestFilter {
 
-    public static final String HEADER = "X-Correlation-Id";
-    public static final String MDC_KEY = "correlationId";
+  public static final String HEADER = "X-Correlation-Id";
+  public static final String MDC_KEY = "correlationId";
 
-    @Override
-    protected void doFilterInternal(
-            HttpServletRequest request, HttpServletResponse response, FilterChain chain)
-            throws ServletException, IOException {
-        String correlationId = request.getHeader(HEADER);
-        if (correlationId == null || correlationId.isBlank()) {
-            correlationId = UUID.randomUUID().toString();
-        }
-        try {
-            MDC.put(MDC_KEY, correlationId);
-            response.setHeader(HEADER, correlationId);
-            chain.doFilter(request, response);
-        } finally {
-            MDC.remove(MDC_KEY);
-        }
+  @Override
+  protected void doFilterInternal(
+      HttpServletRequest request, HttpServletResponse response, FilterChain chain)
+      throws ServletException, IOException {
+    String correlationId = request.getHeader(HEADER);
+    if (correlationId == null || correlationId.isBlank()) {
+      correlationId = UUID.randomUUID().toString();
     }
+    try {
+      MDC.put(MDC_KEY, correlationId);
+      response.setHeader(HEADER, correlationId);
+      chain.doFilter(request, response);
+    } finally {
+      MDC.remove(MDC_KEY);
+    }
+  }
 }

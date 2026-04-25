@@ -10,14 +10,14 @@ import org.springframework.context.annotation.Configuration;
 @EnableConfigurationProperties(KeycloakProperties.class)
 public class KeycloakConfig {
 
-    @Bean
-    Keycloak keycloakAdminClient(KeycloakProperties props) {
-        return KeycloakBuilder.builder()
-                .serverUrl(props.serverUrl())
-                .realm(props.realm())
-                .grantType("client_credentials")
-                .clientId(props.adminClientId())
-                .clientSecret(props.adminClientSecret())
-                .build();
-    }
+  @Bean
+  Keycloak keycloakAdminClient(KeycloakProperties props) {
+    return KeycloakBuilder.builder()
+        .serverUrl(props.serverUrl())
+        .realm(props.realm())
+        .grantType("client_credentials")
+        .clientId(props.adminClientId())
+        .clientSecret(props.adminClientSecret())
+        .build();
+  }
 }

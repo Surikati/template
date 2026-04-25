@@ -2,7 +2,6 @@ package cz.komercpoj.tmpmgmt.template;
 
 import static org.assertj.core.api.Assertions.*;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import cz.komercpoj.tmpmgmt.common.ConflictException;
@@ -32,87 +31,108 @@ import org.springframework.transaction.support.TransactionTemplate;
 @Import({TestcontainersConfig.class, TestSecurityConfig.class})
 class TemplateLifecycleIT {
 
-    @Autowired TemplateService service;
-    @Autowired TemplateVersionRepository versions;
-    @Autowired JdbcTemplate jdbc;
-    @Autowired ObjectMapper mapper;
-    @Autowired TransactionTemplate tx;
+  @Autowired TemplateService service;
+  @Autowired TemplateVersionRepository versions;
+  @Autowired JdbcTemplate jdbc;
+  @Autowired ObjectMapper mapper;
+  @Autowired TransactionTemplate tx;
 
-    private final UUID actor = UUID.randomUUID();
+  private final UUID actor = UUID.randomUUID();
 
-    @Test
-    void fullLifecycle_stagesExpectedEvents_andEnforcesVersionImmutability() {
-        // 1. Create
-        var created = service.create(new TemplateCommands.CreateTemplate(
+  @Test
+  void fullLifecycle_stagesExpectedEvents_andEnforcesVersionImmutability() {
+    // 1. Create
+    var created =
+        service.create(
+            new TemplateCommands.CreateTemplate(
                 "nda-standard", "NDA — standard", "Mlčenlivost", "legal", actor));
-        UUID templateId = created.getId();
-        assertThat(created.getStatus()).isEqualTo(TemplateStatus.ACTIVE);
+    UUID templateId = created.getId();
+    assertThat(created.getStatus()).isEqualTo(TemplateStatus.ACTIVE);
 
-        // 2. Save draft with real content
-        ObjectNode doc = mapper.createObjectNode().put("type", "doc");
-        doc.set("content", mapper.createArrayNode().add(
-                mapper.createObjectNode().put("type", "paragraph").set(
-                        "content", mapper.createArrayNode().add(
-                                mapper.createObjectNode()
-                                        .put("type", "text")
-                                        .put("text", "Hello ")))));
-        ObjectNode schema = mapper.createObjectNode()
-                .put("$schema", "https://json-schema.org/draft/2020-12/schema")
-                .put("type", "object");
-        service.saveDraft(new TemplateCommands.SaveDraft(templateId, doc, schema, actor));
+    // 2. Save draft with real content
+    ObjectNode doc = mapper.createObjectNode().put("type", "doc");
+    doc.set(
+        "content",
+        mapper
+            .createArrayNode()
+            .add(
+                mapper
+                    .createObjectNode()
+                    .put("type", "paragraph")
+                    .set(
+                        "content",
+                        mapper
+                            .createArrayNode()
+                            .add(
+                                mapper
+                                    .createObjectNode()
+                                    .put("type", "text")
+                                    .put("text", "Hello ")))));
+    ObjectNode schema =
+        mapper
+            .createObjectNode()
+            .put("$schema", "https://json-schema.org/draft/2020-12/schema")
+            .put("type", "object");
+    service.saveDraft(new TemplateCommands.SaveDraft(templateId, doc, schema, actor));
 
-        // 3. Publish version 1
-        var v1 = service.publishVersion(new TemplateCommands.PublishVersion(
-                templateId, "initial release", actor));
-        assertThat(v1.getVersionNumber()).isEqualTo(1);
+    // 3. Publish version 1
+    var v1 =
+        service.publishVersion(
+            new TemplateCommands.PublishVersion(templateId, "initial release", actor));
+    assertThat(v1.getVersionNumber()).isEqualTo(1);
 
-        // 4. Publish version 2 (after another draft change)
-        ObjectNode doc2 = doc.deepCopy();
-        doc2.put("foo", "bar"); // trivial change
-        service.saveDraft(new TemplateCommands.SaveDraft(templateId, doc2, schema, actor));
-        var v2 = service.publishVersion(new TemplateCommands.PublishVersion(
-                templateId, "tweak", actor));
-        assertThat(v2.getVersionNumber()).isEqualTo(2);
+    // 4. Publish version 2 (after another draft change)
+    ObjectNode doc2 = doc.deepCopy();
+    doc2.put("foo", "bar"); // trivial change
+    service.saveDraft(new TemplateCommands.SaveDraft(templateId, doc2, schema, actor));
+    var v2 =
+        service.publishVersion(new TemplateCommands.PublishVersion(templateId, "tweak", actor));
+    assertThat(v2.getVersionNumber()).isEqualTo(2);
 
-        // 5. Versions are listable and ordered desc
-        List<TemplateVersionEntity> list = service.listVersions(templateId);
-        assertThat(list).extracting(TemplateVersionEntity::getVersionNumber).containsExactly(2, 1);
+    // 5. Versions are listable and ordered desc
+    List<TemplateVersionEntity> list = service.listVersions(templateId);
+    assertThat(list).extracting(TemplateVersionEntity::getVersionNumber).containsExactly(2, 1);
 
-        // 6. Outbox has the expected sequence of events
-        List<Map<String, Object>> outboxRows = jdbc.queryForList(
-                "SELECT event_type FROM outbox_event WHERE aggregate_id = ? ORDER BY occurred_at",
-                templateId.toString());
-        assertThat(outboxRows)
-                .extracting(r -> r.get("event_type"))
-                .containsExactly(
-                        "created",
-                        "draft.saved",
-                        "version.published",
-                        "draft.saved",
-                        "version.published");
+    // 6. Outbox has the expected sequence of events
+    List<Map<String, Object>> outboxRows =
+        jdbc.queryForList(
+            "SELECT event_type FROM outbox_event WHERE aggregate_id = ? ORDER BY occurred_at",
+            templateId.toString());
+    assertThat(outboxRows)
+        .extracting(r -> r.get("event_type"))
+        .containsExactly(
+            "created", "draft.saved", "version.published", "draft.saved", "version.published");
 
-        // 7. DB trigger rejects UPDATE on template_version — the core immutability guarantee
-        assertThatThrownBy(() ->
-                jdbc.update("UPDATE template_version SET change_note = 'hacked' WHERE id = ?", v1.getId()))
-                .isInstanceOfAny(DataIntegrityViolationException.class, RuntimeException.class);
-    }
+    // 7. DB trigger rejects UPDATE on template_version — the core immutability guarantee
+    assertThatThrownBy(
+            () ->
+                jdbc.update(
+                    "UPDATE template_version SET change_note = 'hacked' WHERE id = ?", v1.getId()))
+        .isInstanceOfAny(DataIntegrityViolationException.class, RuntimeException.class);
+  }
 
-    @Test
-    void createWithDuplicateSlug_throwsConflict() {
-        service.create(new TemplateCommands.CreateTemplate(
-                "contract-v1", "Kontrakt", null, "legal", actor));
-        assertThatThrownBy(() -> service.create(new TemplateCommands.CreateTemplate(
-                "contract-v1", "Jiný kontrakt", null, "legal", actor)))
-                .isInstanceOf(ConflictException.class);
-    }
+  @Test
+  void createWithDuplicateSlug_throwsConflict() {
+    service.create(
+        new TemplateCommands.CreateTemplate("contract-v1", "Kontrakt", null, "legal", actor));
+    assertThatThrownBy(
+            () ->
+                service.create(
+                    new TemplateCommands.CreateTemplate(
+                        "contract-v1", "Jiný kontrakt", null, "legal", actor)))
+        .isInstanceOf(ConflictException.class);
+  }
 
-    @Test
-    void publishOnArchivedTemplate_throwsConflict() {
-        var t = service.create(new TemplateCommands.CreateTemplate(
-                "to-archive", "Archiv", null, null, actor));
-        service.archive(new TemplateCommands.Archive(t.getId(), actor));
-        assertThatThrownBy(() -> service.publishVersion(new TemplateCommands.PublishVersion(
-                t.getId(), "should fail", actor)))
-                .isInstanceOf(ConflictException.class);
-    }
+  @Test
+  void publishOnArchivedTemplate_throwsConflict() {
+    var t =
+        service.create(
+            new TemplateCommands.CreateTemplate("to-archive", "Archiv", null, null, actor));
+    service.archive(new TemplateCommands.Archive(t.getId(), actor));
+    assertThatThrownBy(
+            () ->
+                service.publishVersion(
+                    new TemplateCommands.PublishVersion(t.getId(), "should fail", actor)))
+        .isInstanceOf(ConflictException.class);
+  }
 }

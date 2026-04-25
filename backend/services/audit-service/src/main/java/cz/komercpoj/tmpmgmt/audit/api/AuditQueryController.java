@@ -14,45 +14,45 @@ import org.springframework.web.bind.annotation.*;
 @PreAuthorize("hasRole('ADMIN')")
 public class AuditQueryController {
 
-    private static final int MAX_LIMIT = 500;
+  private static final int MAX_LIMIT = 500;
 
-    private final AuditEventRepository repo;
+  private final AuditEventRepository repo;
 
-    public AuditQueryController(AuditEventRepository repo) {
-        this.repo = repo;
+  public AuditQueryController(AuditEventRepository repo) {
+    this.repo = repo;
+  }
+
+  @GetMapping
+  public List<AuditEventResponse> list(
+      @RequestParam(required = false) String aggregateType,
+      @RequestParam(required = false) String aggregateId,
+      @RequestParam(required = false) UUID actorUserId,
+      @RequestParam(required = false, defaultValue = "100") int limit) {
+
+    int capped = Math.min(Math.max(1, limit), MAX_LIMIT);
+    var page = PageRequest.of(0, capped);
+
+    List<AuditEventEntity> results;
+    if (aggregateType != null && aggregateId != null) {
+      results = repo.findByAggregate(aggregateType, aggregateId, page);
+    } else if (actorUserId != null) {
+      results = repo.findByActor(actorUserId, page);
+    } else {
+      results = repo.findRecent(page);
     }
 
-    @GetMapping
-    public List<AuditEventResponse> list(
-            @RequestParam(required = false) String aggregateType,
-            @RequestParam(required = false) String aggregateId,
-            @RequestParam(required = false) UUID actorUserId,
-            @RequestParam(required = false, defaultValue = "100") int limit) {
+    return results.stream().map(AuditQueryController::toResponse).toList();
+  }
 
-        int capped = Math.min(Math.max(1, limit), MAX_LIMIT);
-        var page = PageRequest.of(0, capped);
-
-        List<AuditEventEntity> results;
-        if (aggregateType != null && aggregateId != null) {
-            results = repo.findByAggregate(aggregateType, aggregateId, page);
-        } else if (actorUserId != null) {
-            results = repo.findByActor(actorUserId, page);
-        } else {
-            results = repo.findRecent(page);
-        }
-
-        return results.stream().map(AuditQueryController::toResponse).toList();
-    }
-
-    private static AuditEventResponse toResponse(AuditEventEntity e) {
-        return new AuditEventResponse(
-                e.getId().getEventId(),
-                e.getId().getOccurredAt(),
-                e.getActorUserId(),
-                e.getAggregateType(),
-                e.getAggregateId(),
-                e.getEventType(),
-                e.getCorrelationId(),
-                e.getPayload());
-    }
+  private static AuditEventResponse toResponse(AuditEventEntity e) {
+    return new AuditEventResponse(
+        e.getId().getEventId(),
+        e.getId().getOccurredAt(),
+        e.getActorUserId(),
+        e.getAggregateType(),
+        e.getAggregateId(),
+        e.getEventType(),
+        e.getCorrelationId(),
+        e.getPayload());
+  }
 }

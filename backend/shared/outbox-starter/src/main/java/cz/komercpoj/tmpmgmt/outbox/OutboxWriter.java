@@ -16,35 +16,35 @@ import org.springframework.transaction.annotation.Transactional;
 @Component
 public class OutboxWriter {
 
-    private static final String INSERT_SQL =
-            "INSERT INTO outbox_event "
-                    + "(event_id, aggregate_type, aggregate_id, event_type, payload, occurred_at) "
-                    + "VALUES (?, ?, ?, ?, ?::jsonb, ?)";
+  private static final String INSERT_SQL =
+      "INSERT INTO outbox_event "
+          + "(event_id, aggregate_type, aggregate_id, event_type, payload, occurred_at) "
+          + "VALUES (?, ?, ?, ?, ?::jsonb, ?)";
 
-    private final JdbcTemplate jdbc;
-    private final ObjectMapper mapper;
+  private final JdbcTemplate jdbc;
+  private final ObjectMapper mapper;
 
-    public OutboxWriter(JdbcTemplate jdbc, ObjectMapper mapper) {
-        this.jdbc = jdbc;
-        this.mapper = mapper;
+  public OutboxWriter(JdbcTemplate jdbc, ObjectMapper mapper) {
+    this.jdbc = jdbc;
+    this.mapper = mapper;
+  }
+
+  @Transactional(propagation = Propagation.MANDATORY)
+  public void stage(String aggregateType, String aggregateId, String eventType, Object payload) {
+    String json;
+    try {
+      json = mapper.writeValueAsString(payload);
+    } catch (JsonProcessingException e) {
+      throw new DomainException("outbox.serialization_failed", e.getMessage(), e);
     }
-
-    @Transactional(propagation = Propagation.MANDATORY)
-    public void stage(String aggregateType, String aggregateId, String eventType, Object payload) {
-        String json;
-        try {
-            json = mapper.writeValueAsString(payload);
-        } catch (JsonProcessingException e) {
-            throw new DomainException("outbox.serialization_failed", e.getMessage(), e);
-        }
-        OutboxEvent evt = OutboxEvent.pending(aggregateType, aggregateId, eventType, json);
-        jdbc.update(
-                INSERT_SQL,
-                evt.eventId(),
-                evt.aggregateType(),
-                evt.aggregateId(),
-                evt.eventType(),
-                evt.payload(),
-                Timestamp.from(evt.occurredAt()));
-    }
+    OutboxEvent evt = OutboxEvent.pending(aggregateType, aggregateId, eventType, json);
+    jdbc.update(
+        INSERT_SQL,
+        evt.eventId(),
+        evt.aggregateType(),
+        evt.aggregateId(),
+        evt.eventType(),
+        evt.payload(),
+        Timestamp.from(evt.occurredAt()));
+  }
 }

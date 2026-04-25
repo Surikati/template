@@ -6,7 +6,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface UserRoleRepository extends JpaRepository<UserRoleEntity, UserRoleKey> {
 
-    List<UserRoleEntity> findByIdUserId(UUID userId);
+  List<UserRoleEntity> findByIdUserId(UUID userId);
 
-    void deleteByIdUserIdAndIdRoleCode(UUID userId, String roleCode);
+  void deleteByIdUserIdAndIdRoleCode(UUID userId, String roleCode);
 }

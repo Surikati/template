@@ -14,37 +14,37 @@ import org.springframework.web.bind.annotation.*;
 @PreAuthorize("hasRole('ADMIN')")
 public class UserController {
 
-    private final AdminUserService service;
+  private final AdminUserService service;
 
-    public UserController(AdminUserService service) {
-        this.service = service;
-    }
+  public UserController(AdminUserService service) {
+    this.service = service;
+  }
 
-    @GetMapping
-    public List<UserResponse> list() {
-        return service.listActive().stream().map(UserController::toResponse).toList();
-    }
+  @GetMapping
+  public List<UserResponse> list() {
+    return service.listActive().stream().map(UserController::toResponse).toList();
+  }
 
-    @GetMapping("/{id}")
-    public UserResponse get(@PathVariable UUID id) {
-        return toResponse(service.getById(id));
-    }
+  @GetMapping("/{id}")
+  public UserResponse get(@PathVariable UUID id) {
+    return toResponse(service.getById(id));
+  }
 
-    @PostMapping("/sync")
-    public SyncResponse sync() {
-        var r = service.sync();
-        return new SyncResponse(r.created(), r.updated(), r.totalFetched());
-    }
+  @PostMapping("/sync")
+  public SyncResponse sync() {
+    var r = service.sync();
+    return new SyncResponse(r.created(), r.updated(), r.totalFetched());
+  }
 
-    private static UserResponse toResponse(AppUserEntity u) {
-        return new UserResponse(
-                u.getId(),
-                u.getKeycloakSubject(),
-                u.getUsername(),
-                u.getEmail(),
-                u.getDisplayName(),
-                u.isActive(),
-                u.getCreatedAt(),
-                u.getLastSyncedAt());
-    }
+  private static UserResponse toResponse(AppUserEntity u) {
+    return new UserResponse(
+        u.getId(),
+        u.getKeycloakSubject(),
+        u.getUsername(),
+        u.getEmail(),
+        u.getDisplayName(),
+        u.isActive(),
+        u.getCreatedAt(),
+        u.getLastSyncedAt());
+  }
 }

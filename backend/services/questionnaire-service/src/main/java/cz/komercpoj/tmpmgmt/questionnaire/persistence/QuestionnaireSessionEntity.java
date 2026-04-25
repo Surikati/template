@@ -22,51 +22,50 @@ import org.hibernate.type.SqlTypes;
 @NoArgsConstructor
 public class QuestionnaireSessionEntity {
 
-    @Id
-    private UUID id;
+  @Id private UUID id;
 
-    @Column(name = "questionnaire_id", nullable = false)
-    private UUID questionnaireId;
+  @Column(name = "questionnaire_id", nullable = false)
+  private UUID questionnaireId;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 20)
-    private SessionState state;
+  @Enumerated(EnumType.STRING)
+  @Column(nullable = false, length = 20)
+  private SessionState state;
 
-    @Column(name = "started_by", nullable = false)
-    private UUID startedBy;
+  @Column(name = "started_by", nullable = false)
+  private UUID startedBy;
 
-    @Column(name = "started_at", nullable = false)
-    private Instant startedAt;
+  @Column(name = "started_at", nullable = false)
+  private Instant startedAt;
 
-    @Column(name = "completed_at")
-    private Instant completedAt;
+  @Column(name = "completed_at")
+  private Instant completedAt;
 
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Column(nullable = false, columnDefinition = "jsonb")
-    private JsonNode answers;
+  @JdbcTypeCode(SqlTypes.JSON)
+  @Column(nullable = false, columnDefinition = "jsonb")
+  private JsonNode answers;
 
-    @Column(name = "current_section_id")
-    private UUID currentSectionId;
+  @Column(name = "current_section_id")
+  private UUID currentSectionId;
 
-    public static QuestionnaireSessionEntity start(
-            UUID id, UUID questionnaireId, UUID startedBy, JsonNode emptyAnswers) {
-        QuestionnaireSessionEntity s = new QuestionnaireSessionEntity();
-        s.id = id;
-        s.questionnaireId = questionnaireId;
-        s.state = SessionState.IN_PROGRESS;
-        s.startedBy = startedBy;
-        s.startedAt = Instant.now();
-        s.answers = emptyAnswers;
-        return s;
-    }
+  public static QuestionnaireSessionEntity start(
+      UUID id, UUID questionnaireId, UUID startedBy, JsonNode emptyAnswers) {
+    QuestionnaireSessionEntity s = new QuestionnaireSessionEntity();
+    s.id = id;
+    s.questionnaireId = questionnaireId;
+    s.state = SessionState.IN_PROGRESS;
+    s.startedBy = startedBy;
+    s.startedAt = Instant.now();
+    s.answers = emptyAnswers;
+    return s;
+  }
 
-    public void markCompleted() {
-        this.state = SessionState.COMPLETED;
-        this.completedAt = Instant.now();
-    }
+  public void markCompleted() {
+    this.state = SessionState.COMPLETED;
+    this.completedAt = Instant.now();
+  }
 
-    public void markAbandoned() {
-        this.state = SessionState.ABANDONED;
-        this.completedAt = Instant.now();
-    }
+  public void markAbandoned() {
+    this.state = SessionState.ABANDONED;
+    this.completedAt = Instant.now();
+  }
 }

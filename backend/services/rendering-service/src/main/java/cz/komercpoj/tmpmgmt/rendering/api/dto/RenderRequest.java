@@ -5,6 +5,4 @@ import jakarta.validation.constraints.NotNull;
 import java.util.Map;
 
 public record RenderRequest(
-        @NotNull JsonNode content,
-        @NotNull Map<String, Object> data,
-        @NotNull RenderFormat format) {}
+    @NotNull JsonNode content, @NotNull Map<String, Object> data, @NotNull RenderFormat format) {}

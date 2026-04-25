@@ -7,8 +7,8 @@ import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
 import cz.komercpoj.tmpmgmt.assembly.application.AssemblyService;
 import cz.komercpoj.tmpmgmt.assembly.application.AssemblyService.AssemblyCommand;
-import cz.komercpoj.tmpmgmt.assembly.domain.OutputFormat;
 import cz.komercpoj.tmpmgmt.assembly.domain.AssemblyState;
+import cz.komercpoj.tmpmgmt.assembly.domain.OutputFormat;
 import cz.komercpoj.tmpmgmt.assembly.persistence.AssemblyJobEntity;
 import cz.komercpoj.tmpmgmt.assembly.persistence.AssemblyJobRepository;
 import cz.komercpoj.tmpmgmt.common.DomainException;
@@ -32,8 +32,8 @@ import org.springframework.test.context.DynamicPropertySource;
  *
  * <ul>
  *   <li>Postgres + RabbitMQ via Testcontainers.
- *   <li>template-service, rendering-service, and document-service stubbed by WireMock on a
- *       single port (paths disambiguate).
+ *   <li>template-service, rendering-service, and document-service stubbed by WireMock on a single
+ *       port (paths disambiguate).
  *   <li>Asserts DB persistence, outbox events, and Feign → HTTP wiring across 3 downstream
  *       services.
  * </ul>
@@ -43,216 +43,253 @@ import org.springframework.test.context.DynamicPropertySource;
 @Import({TestcontainersConfig.class, TestSecurityConfig.class})
 class AssemblyIT {
 
-    private static final WireMockServer WIRE_MOCK =
-            new WireMockServer(WireMockConfiguration.wireMockConfig().dynamicPort());
+  private static final WireMockServer WIRE_MOCK =
+      new WireMockServer(WireMockConfiguration.wireMockConfig().dynamicPort());
 
-    static {
-        // Start in a static initialiser so the port is known when @DynamicPropertySource runs,
-        // i.e. before the Spring context bootstraps Feign clients.
-        WIRE_MOCK.start();
-    }
+  static {
+    // Start in a static initialiser so the port is known when @DynamicPropertySource runs,
+    // i.e. before the Spring context bootstraps Feign clients.
+    WIRE_MOCK.start();
+  }
 
-    @DynamicPropertySource
-    static void overrideClientUrls(DynamicPropertyRegistry registry) {
-        String base = "http://localhost:" + WIRE_MOCK.port();
-        registry.add("tmpmgmt.clients.template-service-url", () -> base);
-        registry.add("tmpmgmt.clients.clause-service-url", () -> base);
-        registry.add("tmpmgmt.clients.rendering-service-url", () -> base);
-        registry.add("tmpmgmt.clients.document-service-url", () -> base);
-    }
+  @DynamicPropertySource
+  static void overrideClientUrls(DynamicPropertyRegistry registry) {
+    String base = "http://localhost:" + WIRE_MOCK.port();
+    registry.add("tmpmgmt.clients.template-service-url", () -> base);
+    registry.add("tmpmgmt.clients.clause-service-url", () -> base);
+    registry.add("tmpmgmt.clients.rendering-service-url", () -> base);
+    registry.add("tmpmgmt.clients.document-service-url", () -> base);
+  }
 
-    @AfterAll
-    static void stopWireMock() {
-        WIRE_MOCK.stop();
-    }
+  @AfterAll
+  static void stopWireMock() {
+    WIRE_MOCK.stop();
+  }
 
-    @BeforeEach
-    void resetStubs() {
-        WIRE_MOCK.resetAll();
-    }
+  @BeforeEach
+  void resetStubs() {
+    WIRE_MOCK.resetAll();
+  }
 
-    @Autowired AssemblyService service;
-    @Autowired AssemblyJobRepository jobs;
-    @Autowired JdbcTemplate jdbc;
+  @Autowired AssemblyService service;
+  @Autowired AssemblyJobRepository jobs;
+  @Autowired JdbcTemplate jdbc;
 
-    private final UUID actor = UUID.randomUUID();
+  private final UUID actor = UUID.randomUUID();
 
-    @Test
-    void assemble_happyPath_uploadsToDocumentServiceAndCompletesJob() {
-        UUID templateId = UUID.randomUUID();
-        UUID expectedDocumentId = UUID.randomUUID();
-        byte[] expectedBytes = "DOCX_BINARY".getBytes();
+  @Test
+  void assemble_happyPath_uploadsToDocumentServiceAndCompletesJob() {
+    UUID templateId = UUID.randomUUID();
+    UUID expectedDocumentId = UUID.randomUUID();
+    byte[] expectedBytes = "DOCX_BINARY".getBytes();
 
-        WIRE_MOCK.stubFor(get(urlEqualTo("/api/v1/templates/" + templateId + "/versions/1"))
-                .willReturn(okJson(templateVersionJson(templateId, 1))));
-        WIRE_MOCK.stubFor(post(urlEqualTo("/api/v1/render"))
-                .willReturn(okJson(renderResponseJson(expectedBytes))));
-        WIRE_MOCK.stubFor(post(urlEqualTo("/api/v1/documents"))
-                .willReturn(okJson(documentResponseJson(expectedDocumentId, templateId, 1, expectedBytes.length))));
+    WIRE_MOCK.stubFor(
+        get(urlEqualTo("/api/v1/templates/" + templateId + "/versions/1"))
+            .willReturn(okJson(templateVersionJson(templateId, 1))));
+    WIRE_MOCK.stubFor(
+        post(urlEqualTo("/api/v1/render")).willReturn(okJson(renderResponseJson(expectedBytes))));
+    WIRE_MOCK.stubFor(
+        post(urlEqualTo("/api/v1/documents"))
+            .willReturn(
+                okJson(
+                    documentResponseJson(
+                        expectedDocumentId, templateId, 1, expectedBytes.length))));
 
-        var result = service.assemble(new AssemblyCommand(
-                templateId, 1, Map.of("client", Map.of("name", "ACME")), List.of(OutputFormat.DOCX), actor));
+    var result =
+        service.assemble(
+            new AssemblyCommand(
+                templateId,
+                1,
+                Map.of("client", Map.of("name", "ACME")),
+                List.of(OutputFormat.DOCX),
+                actor));
 
-        assertThat(result.job().getState()).isEqualTo(AssemblyState.COMPLETED);
-        assertThat(result.job().getCompletedAt()).isNotNull();
-        assertThat(result.documentId()).isEqualTo(expectedDocumentId);
-        assertThat(result.files()).hasSize(1);
-        assertThat(result.files().get(0).format()).isEqualTo(OutputFormat.DOCX);
-        assertThat(result.files().get(0).downloadUrl())
-                .isEqualTo("/api/v1/documents/" + expectedDocumentId + "/files/DOCX");
+    assertThat(result.job().getState()).isEqualTo(AssemblyState.COMPLETED);
+    assertThat(result.job().getCompletedAt()).isNotNull();
+    assertThat(result.documentId()).isEqualTo(expectedDocumentId);
+    assertThat(result.files()).hasSize(1);
+    assertThat(result.files().get(0).format()).isEqualTo(OutputFormat.DOCX);
+    assertThat(result.files().get(0).downloadUrl())
+        .isEqualTo("/api/v1/documents/" + expectedDocumentId + "/files/DOCX");
 
-        // Job row reflects the resulting document.
-        AssemblyJobEntity saved = jobs.findById(result.job().getId()).orElseThrow();
-        assertThat(saved.getResultDocumentId()).isEqualTo(expectedDocumentId);
+    // Job row reflects the resulting document.
+    AssemblyJobEntity saved = jobs.findById(result.job().getId()).orElseThrow();
+    assertThat(saved.getResultDocumentId()).isEqualTo(expectedDocumentId);
 
-        // Outbox events staged in order.
-        List<Map<String, Object>> rows = jdbc.queryForList(
-                "SELECT event_type FROM outbox_event WHERE aggregate_id = ? ORDER BY occurred_at",
-                result.job().getId().toString());
-        assertThat(rows).extracting(r -> r.get("event_type"))
-                .containsExactly("requested", "completed");
+    // Outbox events staged in order.
+    List<Map<String, Object>> rows =
+        jdbc.queryForList(
+            "SELECT event_type FROM outbox_event WHERE aggregate_id = ? ORDER BY occurred_at",
+            result.job().getId().toString());
+    assertThat(rows).extracting(r -> r.get("event_type")).containsExactly("requested", "completed");
 
-        // Every downstream service was hit exactly once.
-        WIRE_MOCK.verify(1, getRequestedFor(
-                urlEqualTo("/api/v1/templates/" + templateId + "/versions/1")));
-        WIRE_MOCK.verify(1, postRequestedFor(urlEqualTo("/api/v1/render")));
-        WIRE_MOCK.verify(1, postRequestedFor(urlEqualTo("/api/v1/documents")));
-    }
+    // Every downstream service was hit exactly once.
+    WIRE_MOCK.verify(
+        1, getRequestedFor(urlEqualTo("/api/v1/templates/" + templateId + "/versions/1")));
+    WIRE_MOCK.verify(1, postRequestedFor(urlEqualTo("/api/v1/render")));
+    WIRE_MOCK.verify(1, postRequestedFor(urlEqualTo("/api/v1/documents")));
+  }
 
-    @Test
-    void assemble_withClauseRef_resolvesAndIncludesClauseContent() {
-        UUID templateId = UUID.randomUUID();
-        UUID clauseId = UUID.randomUUID();
-        UUID expectedDocumentId = UUID.randomUUID();
-        byte[] expectedBytes = "DOCX_WITH_CLAUSE".getBytes();
+  @Test
+  void assemble_withClauseRef_resolvesAndIncludesClauseContent() {
+    UUID templateId = UUID.randomUUID();
+    UUID clauseId = UUID.randomUUID();
+    UUID expectedDocumentId = UUID.randomUUID();
+    byte[] expectedBytes = "DOCX_WITH_CLAUSE".getBytes();
 
-        // Template references a clause version.
-        WIRE_MOCK.stubFor(get(urlEqualTo("/api/v1/templates/" + templateId + "/versions/1"))
-                .willReturn(okJson(templateVersionJsonWithClauseRef(templateId, 1, clauseId, 3))));
+    // Template references a clause version.
+    WIRE_MOCK.stubFor(
+        get(urlEqualTo("/api/v1/templates/" + templateId + "/versions/1"))
+            .willReturn(okJson(templateVersionJsonWithClauseRef(templateId, 1, clauseId, 3))));
 
-        // clause-service returns the clause fragment.
-        WIRE_MOCK.stubFor(get(urlEqualTo("/api/v1/clauses/" + clauseId + "/versions/3"))
-                .willReturn(okJson(clauseVersionJson(clauseId, 3))));
+    // clause-service returns the clause fragment.
+    WIRE_MOCK.stubFor(
+        get(urlEqualTo("/api/v1/clauses/" + clauseId + "/versions/3"))
+            .willReturn(okJson(clauseVersionJson(clauseId, 3))));
 
-        WIRE_MOCK.stubFor(post(urlEqualTo("/api/v1/render"))
-                .willReturn(okJson(renderResponseJson(expectedBytes))));
-        WIRE_MOCK.stubFor(post(urlEqualTo("/api/v1/documents"))
-                .willReturn(okJson(documentResponseJson(expectedDocumentId, templateId, 1, expectedBytes.length))));
+    WIRE_MOCK.stubFor(
+        post(urlEqualTo("/api/v1/render")).willReturn(okJson(renderResponseJson(expectedBytes))));
+    WIRE_MOCK.stubFor(
+        post(urlEqualTo("/api/v1/documents"))
+            .willReturn(
+                okJson(
+                    documentResponseJson(
+                        expectedDocumentId, templateId, 1, expectedBytes.length))));
 
-        var result = service.assemble(new AssemblyCommand(
-                templateId, 1, Map.of(), List.of(OutputFormat.DOCX), actor));
+    var result =
+        service.assemble(
+            new AssemblyCommand(templateId, 1, Map.of(), List.of(OutputFormat.DOCX), actor));
 
-        assertThat(result.job().getState()).isEqualTo(AssemblyState.COMPLETED);
-        assertThat(result.documentId()).isEqualTo(expectedDocumentId);
+    assertThat(result.job().getState()).isEqualTo(AssemblyState.COMPLETED);
+    assertThat(result.documentId()).isEqualTo(expectedDocumentId);
 
-        // clause-service WAS called to resolve the reference.
-        WIRE_MOCK.verify(1, getRequestedFor(
-                urlEqualTo("/api/v1/clauses/" + clauseId + "/versions/3")));
+    // clause-service WAS called to resolve the reference.
+    WIRE_MOCK.verify(1, getRequestedFor(urlEqualTo("/api/v1/clauses/" + clauseId + "/versions/3")));
 
-        // The request to rendering-service must NOT contain any clauseRef node any more —
-        // the resolver inlined the clause content before hand-off.
-        WIRE_MOCK.verify(postRequestedFor(urlEqualTo("/api/v1/render"))
-                .withRequestBody(notMatching(".*clauseRef.*"))
-                .withRequestBody(matching(".*GDPR doložka.*")));
-    }
+    // The request to rendering-service must NOT contain any clauseRef node any more —
+    // the resolver inlined the clause content before hand-off.
+    WIRE_MOCK.verify(
+        postRequestedFor(urlEqualTo("/api/v1/render"))
+            .withRequestBody(notMatching(".*clauseRef.*"))
+            .withRequestBody(matching(".*GDPR doložka.*")));
+  }
 
-    @Test
-    void assemble_clauseResolutionFails_marksJobFailed() {
-        UUID templateId = UUID.randomUUID();
-        UUID clauseId = UUID.randomUUID();
+  @Test
+  void assemble_clauseResolutionFails_marksJobFailed() {
+    UUID templateId = UUID.randomUUID();
+    UUID clauseId = UUID.randomUUID();
 
-        WIRE_MOCK.stubFor(get(urlEqualTo("/api/v1/templates/" + templateId + "/versions/1"))
-                .willReturn(okJson(templateVersionJsonWithClauseRef(templateId, 1, clauseId, 3))));
-        WIRE_MOCK.stubFor(get(urlEqualTo("/api/v1/clauses/" + clauseId + "/versions/3"))
-                .willReturn(aResponse().withStatus(404)));
+    WIRE_MOCK.stubFor(
+        get(urlEqualTo("/api/v1/templates/" + templateId + "/versions/1"))
+            .willReturn(okJson(templateVersionJsonWithClauseRef(templateId, 1, clauseId, 3))));
+    WIRE_MOCK.stubFor(
+        get(urlEqualTo("/api/v1/clauses/" + clauseId + "/versions/3"))
+            .willReturn(aResponse().withStatus(404)));
 
-        assertThatThrownBy(() -> service.assemble(new AssemblyCommand(
-                templateId, 1, Map.of(), List.of(OutputFormat.DOCX), actor)))
-                .isInstanceOf(DomainException.class);
+    assertThatThrownBy(
+            () ->
+                service.assemble(
+                    new AssemblyCommand(
+                        templateId, 1, Map.of(), List.of(OutputFormat.DOCX), actor)))
+        .isInstanceOf(DomainException.class);
 
-        AssemblyJobEntity job = jobs.findAll().get(0);
-        assertThat(job.getState()).isEqualTo(AssemblyState.FAILED);
+    AssemblyJobEntity job = jobs.findAll().get(0);
+    assertThat(job.getState()).isEqualTo(AssemblyState.FAILED);
 
-        WIRE_MOCK.verify(0, postRequestedFor(urlEqualTo("/api/v1/render")));
-        WIRE_MOCK.verify(0, postRequestedFor(urlEqualTo("/api/v1/documents")));
-    }
+    WIRE_MOCK.verify(0, postRequestedFor(urlEqualTo("/api/v1/render")));
+    WIRE_MOCK.verify(0, postRequestedFor(urlEqualTo("/api/v1/documents")));
+  }
 
-    @Test
-    void assemble_renderingFails_marksJobFailedAndDoesNotCallDocumentService() {
-        UUID templateId = UUID.randomUUID();
+  @Test
+  void assemble_renderingFails_marksJobFailedAndDoesNotCallDocumentService() {
+    UUID templateId = UUID.randomUUID();
 
-        WIRE_MOCK.stubFor(get(urlEqualTo("/api/v1/templates/" + templateId + "/versions/1"))
-                .willReturn(okJson(templateVersionJson(templateId, 1))));
-        WIRE_MOCK.stubFor(post(urlEqualTo("/api/v1/render"))
-                .willReturn(aResponse().withStatus(500).withBody("{\"detail\":\"boom\"}")));
+    WIRE_MOCK.stubFor(
+        get(urlEqualTo("/api/v1/templates/" + templateId + "/versions/1"))
+            .willReturn(okJson(templateVersionJson(templateId, 1))));
+    WIRE_MOCK.stubFor(
+        post(urlEqualTo("/api/v1/render"))
+            .willReturn(aResponse().withStatus(500).withBody("{\"detail\":\"boom\"}")));
 
-        assertThatThrownBy(() -> service.assemble(new AssemblyCommand(
-                templateId, 1, Map.of(), List.of(OutputFormat.DOCX), actor)))
-                .isInstanceOf(DomainException.class);
+    assertThatThrownBy(
+            () ->
+                service.assemble(
+                    new AssemblyCommand(
+                        templateId, 1, Map.of(), List.of(OutputFormat.DOCX), actor)))
+        .isInstanceOf(DomainException.class);
 
-        AssemblyJobEntity job = jobs.findAll().get(0);
-        assertThat(job.getState()).isEqualTo(AssemblyState.FAILED);
-        assertThat(job.getErrorMessage()).isNotBlank();
-        assertThat(job.getResultDocumentId()).isNull();
+    AssemblyJobEntity job = jobs.findAll().get(0);
+    assertThat(job.getState()).isEqualTo(AssemblyState.FAILED);
+    assertThat(job.getErrorMessage()).isNotBlank();
+    assertThat(job.getResultDocumentId()).isNull();
 
-        List<Map<String, Object>> rows = jdbc.queryForList(
-                "SELECT event_type FROM outbox_event WHERE aggregate_id = ? ORDER BY occurred_at",
-                job.getId().toString());
-        assertThat(rows).extracting(r -> r.get("event_type"))
-                .containsExactly("requested", "failed");
+    List<Map<String, Object>> rows =
+        jdbc.queryForList(
+            "SELECT event_type FROM outbox_event WHERE aggregate_id = ? ORDER BY occurred_at",
+            job.getId().toString());
+    assertThat(rows).extracting(r -> r.get("event_type")).containsExactly("requested", "failed");
 
-        // document-service never got called when rendering blew up
-        WIRE_MOCK.verify(0, postRequestedFor(urlEqualTo("/api/v1/documents")));
-    }
+    // document-service never got called when rendering blew up
+    WIRE_MOCK.verify(0, postRequestedFor(urlEqualTo("/api/v1/documents")));
+  }
 
-    @Test
-    void assemble_documentUploadFails_marksJobFailed() {
-        UUID templateId = UUID.randomUUID();
-        byte[] expectedBytes = "DOCX_BINARY".getBytes();
+  @Test
+  void assemble_documentUploadFails_marksJobFailed() {
+    UUID templateId = UUID.randomUUID();
+    byte[] expectedBytes = "DOCX_BINARY".getBytes();
 
-        WIRE_MOCK.stubFor(get(urlEqualTo("/api/v1/templates/" + templateId + "/versions/1"))
-                .willReturn(okJson(templateVersionJson(templateId, 1))));
-        WIRE_MOCK.stubFor(post(urlEqualTo("/api/v1/render"))
-                .willReturn(okJson(renderResponseJson(expectedBytes))));
-        WIRE_MOCK.stubFor(post(urlEqualTo("/api/v1/documents"))
-                .willReturn(aResponse().withStatus(503).withBody("{\"detail\":\"MinIO down\"}")));
+    WIRE_MOCK.stubFor(
+        get(urlEqualTo("/api/v1/templates/" + templateId + "/versions/1"))
+            .willReturn(okJson(templateVersionJson(templateId, 1))));
+    WIRE_MOCK.stubFor(
+        post(urlEqualTo("/api/v1/render")).willReturn(okJson(renderResponseJson(expectedBytes))));
+    WIRE_MOCK.stubFor(
+        post(urlEqualTo("/api/v1/documents"))
+            .willReturn(aResponse().withStatus(503).withBody("{\"detail\":\"MinIO down\"}")));
 
-        assertThatThrownBy(() -> service.assemble(new AssemblyCommand(
-                templateId, 1, Map.of(), List.of(OutputFormat.DOCX), actor)))
-                .isInstanceOf(DomainException.class);
+    assertThatThrownBy(
+            () ->
+                service.assemble(
+                    new AssemblyCommand(
+                        templateId, 1, Map.of(), List.of(OutputFormat.DOCX), actor)))
+        .isInstanceOf(DomainException.class);
 
-        AssemblyJobEntity job = jobs.findAll().get(0);
-        assertThat(job.getState()).isEqualTo(AssemblyState.FAILED);
+    AssemblyJobEntity job = jobs.findAll().get(0);
+    assertThat(job.getState()).isEqualTo(AssemblyState.FAILED);
 
-        List<Map<String, Object>> rows = jdbc.queryForList(
-                "SELECT event_type FROM outbox_event WHERE aggregate_id = ? ORDER BY occurred_at",
-                job.getId().toString());
-        assertThat(rows).extracting(r -> r.get("event_type"))
-                .containsExactly("requested", "failed");
-    }
+    List<Map<String, Object>> rows =
+        jdbc.queryForList(
+            "SELECT event_type FROM outbox_event WHERE aggregate_id = ? ORDER BY occurred_at",
+            job.getId().toString());
+    assertThat(rows).extracting(r -> r.get("event_type")).containsExactly("requested", "failed");
+  }
 
-    @Test
-    void assemble_templateVersionNotFound_marksJobFailed() {
-        UUID templateId = UUID.randomUUID();
+  @Test
+  void assemble_templateVersionNotFound_marksJobFailed() {
+    UUID templateId = UUID.randomUUID();
 
-        WIRE_MOCK.stubFor(get(urlEqualTo("/api/v1/templates/" + templateId + "/versions/99"))
-                .willReturn(aResponse().withStatus(404)));
+    WIRE_MOCK.stubFor(
+        get(urlEqualTo("/api/v1/templates/" + templateId + "/versions/99"))
+            .willReturn(aResponse().withStatus(404)));
 
-        assertThatThrownBy(() -> service.assemble(new AssemblyCommand(
-                templateId, 99, Map.of(), List.of(OutputFormat.DOCX), actor)))
-                .isInstanceOf(DomainException.class);
+    assertThatThrownBy(
+            () ->
+                service.assemble(
+                    new AssemblyCommand(
+                        templateId, 99, Map.of(), List.of(OutputFormat.DOCX), actor)))
+        .isInstanceOf(DomainException.class);
 
-        AssemblyJobEntity job = jobs.findAll().get(0);
-        assertThat(job.getState()).isEqualTo(AssemblyState.FAILED);
+    AssemblyJobEntity job = jobs.findAll().get(0);
+    assertThat(job.getState()).isEqualTo(AssemblyState.FAILED);
 
-        WIRE_MOCK.verify(0, postRequestedFor(urlEqualTo("/api/v1/render")));
-        WIRE_MOCK.verify(0, postRequestedFor(urlEqualTo("/api/v1/documents")));
-    }
+    WIRE_MOCK.verify(0, postRequestedFor(urlEqualTo("/api/v1/render")));
+    WIRE_MOCK.verify(0, postRequestedFor(urlEqualTo("/api/v1/documents")));
+  }
 
-    // -- helpers --------------------------------------------------------------------------
+  // -- helpers --------------------------------------------------------------------------
 
-    private static String templateVersionJson(UUID templateId, int versionNumber) {
-        return """
+  private static String templateVersionJson(UUID templateId, int versionNumber) {
+    return """
                 {
                   "id": "%s",
                   "templateId": "%s",
@@ -271,12 +308,13 @@ class AssemblyIT {
                   "publishedAt": "2026-04-23T10:00:00Z",
                   "publishedBy": "%s"
                 }
-                """.formatted(UUID.randomUUID(), templateId, versionNumber, UUID.randomUUID());
-    }
+                """
+        .formatted(UUID.randomUUID(), templateId, versionNumber, UUID.randomUUID());
+  }
 
-    private static String templateVersionJsonWithClauseRef(
-            UUID templateId, int versionNumber, UUID clauseId, int clauseVersion) {
-        return """
+  private static String templateVersionJsonWithClauseRef(
+      UUID templateId, int versionNumber, UUID clauseId, int clauseVersion) {
+    return """
                 {
                   "id": "%s",
                   "templateId": "%s",
@@ -294,13 +332,18 @@ class AssemblyIT {
                   "publishedAt": "2026-04-23T10:00:00Z",
                   "publishedBy": "%s"
                 }
-                """.formatted(
-                        UUID.randomUUID(), templateId, versionNumber,
-                        clauseId, clauseVersion, UUID.randomUUID());
-    }
+                """
+        .formatted(
+            UUID.randomUUID(),
+            templateId,
+            versionNumber,
+            clauseId,
+            clauseVersion,
+            UUID.randomUUID());
+  }
 
-    private static String clauseVersionJson(UUID clauseId, int versionNumber) {
-        return """
+  private static String clauseVersionJson(UUID clauseId, int versionNumber) {
+    return """
                 {
                   "id": "%s",
                   "clauseId": "%s",
@@ -317,23 +360,25 @@ class AssemblyIT {
                   "publishedAt": "2026-04-23T10:00:00Z",
                   "publishedBy": "%s"
                 }
-                """.formatted(UUID.randomUUID(), clauseId, versionNumber, UUID.randomUUID());
-    }
+                """
+        .formatted(UUID.randomUUID(), clauseId, versionNumber, UUID.randomUUID());
+  }
 
-    private static String renderResponseJson(byte[] content) {
-        String base64 = Base64.getEncoder().encodeToString(content);
-        return """
+  private static String renderResponseJson(byte[] content) {
+    String base64 = Base64.getEncoder().encodeToString(content);
+    return """
                 {
                   "format": "DOCX",
                   "filename": "document.docx",
                   "content": "%s"
                 }
-                """.formatted(base64);
-    }
+                """
+        .formatted(base64);
+  }
 
-    private static String documentResponseJson(UUID docId, UUID templateId, int version, int size) {
-        UUID fileId = UUID.randomUUID();
-        return """
+  private static String documentResponseJson(UUID docId, UUID templateId, int version, int size) {
+    UUID fileId = UUID.randomUUID();
+    return """
                 {
                   "id": "%s",
                   "templateId": "%s",
@@ -352,7 +397,8 @@ class AssemblyIT {
                     }
                   ]
                 }
-                """.formatted(docId, templateId, version,
-                        UUID.randomUUID(), UUID.randomUUID(), fileId, size, docId);
-    }
+                """
+        .formatted(
+            docId, templateId, version, UUID.randomUUID(), UUID.randomUUID(), fileId, size, docId);
+  }
 }

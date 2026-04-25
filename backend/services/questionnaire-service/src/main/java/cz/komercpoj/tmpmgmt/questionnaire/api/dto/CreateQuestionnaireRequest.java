@@ -8,7 +8,7 @@ import java.util.List;
 import java.util.UUID;
 
 public record CreateQuestionnaireRequest(
-        @NotNull UUID templateId,
-        @Positive int templateVersionNumber,
-        @NotBlank String name,
-        @NotNull @Valid List<SectionInputDto> sections) {}
+    @NotNull UUID templateId,
+    @Positive int templateVersionNumber,
+    @NotBlank String name,
+    @NotNull @Valid List<SectionInputDto> sections) {}

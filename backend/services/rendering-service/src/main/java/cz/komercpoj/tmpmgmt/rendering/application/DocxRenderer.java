@@ -32,8 +32,8 @@ import org.springframework.stereotype.Component;
  *   <li>{@code text} — {@code W:r/W:t} with raw text.
  *   <li>{@code variable} — resolve {@code attrs.path} via data, emit as text.
  *   <li>{@code conditionBlock} — evaluate {@code attrs.when}; recurse if truthy.
- *   <li>{@code repeatBlock} — evaluate {@code attrs.in} to a list, bind each item to
- *       {@code attrs.each} in a scoped data context, recurse per item.
+ *   <li>{@code repeatBlock} — evaluate {@code attrs.in} to a list, bind each item to {@code
+ *       attrs.each} in a scoped data context, recurse per item.
  * </ul>
  *
  * <p>{@code clauseRef} is not handled here; assembly-service expands those before calling the
@@ -42,144 +42,146 @@ import org.springframework.stereotype.Component;
 @Component
 public class DocxRenderer {
 
-    private final ExpressionEvaluator expressions;
-    private final VariableFormatter formatter;
-    private final ObjectMapper mapper;
-    private final ObjectFactory factory = Context.getWmlObjectFactory();
+  private final ExpressionEvaluator expressions;
+  private final VariableFormatter formatter;
+  private final ObjectMapper mapper;
+  private final ObjectFactory factory = Context.getWmlObjectFactory();
 
-    public DocxRenderer(
-            ExpressionEvaluator expressions, VariableFormatter formatter, ObjectMapper mapper) {
-        this.expressions = expressions;
-        this.formatter = formatter;
-        this.mapper = mapper;
+  public DocxRenderer(
+      ExpressionEvaluator expressions, VariableFormatter formatter, ObjectMapper mapper) {
+    this.expressions = expressions;
+    this.formatter = formatter;
+    this.mapper = mapper;
+  }
+
+  public byte[] render(JsonNode ast, Map<String, Object> data) {
+    try {
+      WordprocessingMLPackage pkg = WordprocessingMLPackage.createPackage();
+      MainDocumentPart doc = pkg.getMainDocumentPart();
+
+      JsonNode children = ast.path("content");
+      if (children.isArray()) {
+        walkBlocks(children, data, doc);
+      }
+
+      ByteArrayOutputStream out = new ByteArrayOutputStream();
+      pkg.save(out);
+      return out.toByteArray();
+    } catch (DomainException e) {
+      throw e;
+    } catch (Exception e) {
+      throw new DomainException("rendering.failed", "DOCX rendering failed: " + e.getMessage(), e);
     }
+  }
 
-    public byte[] render(JsonNode ast, Map<String, Object> data) {
-        try {
-            WordprocessingMLPackage pkg = WordprocessingMLPackage.createPackage();
-            MainDocumentPart doc = pkg.getMainDocumentPart();
-
-            JsonNode children = ast.path("content");
-            if (children.isArray()) {
-                walkBlocks(children, data, doc);
-            }
-
-            ByteArrayOutputStream out = new ByteArrayOutputStream();
-            pkg.save(out);
-            return out.toByteArray();
-        } catch (DomainException e) {
-            throw e;
-        } catch (Exception e) {
-            throw new DomainException("rendering.failed", "DOCX rendering failed: " + e.getMessage(), e);
+  private void walkBlocks(JsonNode blocks, Map<String, Object> data, MainDocumentPart doc) {
+    Iterator<JsonNode> it = blocks.elements();
+    while (it.hasNext()) {
+      JsonNode node = it.next();
+      switch (node.path("type").asText("")) {
+        case "paragraph" -> doc.getContent().add(renderParagraph(node, data, null));
+        case "heading" -> {
+          int level = Math.max(1, Math.min(6, node.path("attrs").path("level").asInt(1)));
+          doc.getContent().add(renderParagraph(node, data, "Heading" + level));
         }
-    }
-
-    private void walkBlocks(JsonNode blocks, Map<String, Object> data, MainDocumentPart doc) {
-        Iterator<JsonNode> it = blocks.elements();
-        while (it.hasNext()) {
-            JsonNode node = it.next();
-            switch (node.path("type").asText("")) {
-                case "paragraph" -> doc.getContent().add(renderParagraph(node, data, null));
-                case "heading" -> {
-                    int level = Math.max(1, Math.min(6, node.path("attrs").path("level").asInt(1)));
-                    doc.getContent().add(renderParagraph(node, data, "Heading" + level));
-                }
-                case "conditionBlock" -> {
-                    String when = node.path("attrs").path("when").asText("");
-                    if (!when.isBlank() && expressions.evaluateBoolean(when, data)) {
-                        JsonNode innerBlocks = node.path("content");
-                        if (innerBlocks.isArray()) walkBlocks(innerBlocks, data, doc);
-                    }
-                }
-                case "repeatBlock" -> renderRepeatBlock(node, data, doc);
-                default -> {
-                    // Unknown block types are silently ignored.
-                }
-            }
+        case "conditionBlock" -> {
+          String when = node.path("attrs").path("when").asText("");
+          if (!when.isBlank() && expressions.evaluateBoolean(when, data)) {
+            JsonNode innerBlocks = node.path("content");
+            if (innerBlocks.isArray()) walkBlocks(innerBlocks, data, doc);
+          }
         }
-    }
-
-    private P renderParagraph(JsonNode paragraphNode, Map<String, Object> data, String pStyle) {
-        P p = factory.createP();
-        if (pStyle != null) {
-            PPr pPr = factory.createPPr();
-            PPrBase.PStyle s = factory.createPPrBasePStyle();
-            s.setVal(pStyle);
-            pPr.setPStyle(s);
-            p.setPPr(pPr);
+        case "repeatBlock" -> renderRepeatBlock(node, data, doc);
+        default -> {
+          // Unknown block types are silently ignored.
         }
+      }
+    }
+  }
 
-        JsonNode inlines = paragraphNode.path("content");
-        if (inlines.isArray()) {
-            Iterator<JsonNode> it = inlines.elements();
-            while (it.hasNext()) {
-                JsonNode inline = it.next();
-                String type = inline.path("type").asText("");
-                switch (type) {
-                    case "text" -> p.getContent().add(textRun(inline.path("text").asText("")));
-                    case "variable" -> {
-                        JsonNode attrs = inline.path("attrs");
-                        String path = attrs.path("path").asText("");
-                        String format = attrs.path("format").asText(null);
-                        Object resolved = resolvePath(path, data);
-                        p.getContent().add(textRun(formatter.format(resolved, format)));
-                    }
-                    default -> { /* skip unsupported inline */ }
-                }
-            }
+  private P renderParagraph(JsonNode paragraphNode, Map<String, Object> data, String pStyle) {
+    P p = factory.createP();
+    if (pStyle != null) {
+      PPr pPr = factory.createPPr();
+      PPrBase.PStyle s = factory.createPPrBasePStyle();
+      s.setVal(pStyle);
+      pPr.setPStyle(s);
+      p.setPPr(pPr);
+    }
+
+    JsonNode inlines = paragraphNode.path("content");
+    if (inlines.isArray()) {
+      Iterator<JsonNode> it = inlines.elements();
+      while (it.hasNext()) {
+        JsonNode inline = it.next();
+        String type = inline.path("type").asText("");
+        switch (type) {
+          case "text" -> p.getContent().add(textRun(inline.path("text").asText("")));
+          case "variable" -> {
+            JsonNode attrs = inline.path("attrs");
+            String path = attrs.path("path").asText("");
+            String format = attrs.path("format").asText(null);
+            Object resolved = resolvePath(path, data);
+            p.getContent().add(textRun(formatter.format(resolved, format)));
+          }
+          default -> {
+            /* skip unsupported inline */
+          }
         }
-        return p;
+      }
     }
+    return p;
+  }
 
-    private void renderRepeatBlock(JsonNode node, Map<String, Object> data, MainDocumentPart doc) {
-        String each = node.path("attrs").path("each").asText("");
-        String inExpr = node.path("attrs").path("in").asText("");
-        if (each.isBlank() || inExpr.isBlank()) return;
+  private void renderRepeatBlock(JsonNode node, Map<String, Object> data, MainDocumentPart doc) {
+    String each = node.path("attrs").path("each").asText("");
+    String inExpr = node.path("attrs").path("in").asText("");
+    if (each.isBlank() || inExpr.isBlank()) return;
 
-        Object value = expressions.evaluate(inExpr, data);
-        if (!(value instanceof List<?> list)) return; // missing / wrong type → silently skip
+    Object value = expressions.evaluate(inExpr, data);
+    if (!(value instanceof List<?> list)) return; // missing / wrong type → silently skip
 
-        JsonNode innerBlocks = node.path("content");
-        if (!innerBlocks.isArray()) return;
+    JsonNode innerBlocks = node.path("content");
+    if (!innerBlocks.isArray()) return;
 
-        for (Object item : list) {
-            // Shallow copy of parent scope, shadowed by the loop variable.
-            Map<String, Object> scoped = new HashMap<>(data);
-            scoped.put(each, item);
-            walkBlocks(innerBlocks, scoped, doc);
-        }
+    for (Object item : list) {
+      // Shallow copy of parent scope, shadowed by the loop variable.
+      Map<String, Object> scoped = new HashMap<>(data);
+      scoped.put(each, item);
+      walkBlocks(innerBlocks, scoped, doc);
     }
+  }
 
-    private R textRun(String value) {
-        R run = factory.createR();
-        Text t = factory.createText();
-        t.setValue(value == null ? "" : value);
-        // Preserve leading/trailing whitespace.
-        t.setSpace("preserve");
-        run.getContent().add(factory.createRT(t));
-        return run;
-    }
+  private R textRun(String value) {
+    R run = factory.createR();
+    Text t = factory.createText();
+    t.setValue(value == null ? "" : value);
+    // Preserve leading/trailing whitespace.
+    t.setSpace("preserve");
+    run.getContent().add(factory.createRT(t));
+    return run;
+  }
 
-    @SuppressWarnings("unchecked")
-    private Object resolvePath(String path, Map<String, Object> data) {
-        if (path == null || path.isBlank()) return null;
-        Object cursor = data;
-        for (String seg : path.split("\\.")) {
-            if (!(cursor instanceof Map<?, ?> m)) return null;
-            cursor = ((Map<String, Object>) m).get(seg);
-            if (cursor == null) return null;
-        }
-        return cursor;
+  @SuppressWarnings("unchecked")
+  private Object resolvePath(String path, Map<String, Object> data) {
+    if (path == null || path.isBlank()) return null;
+    Object cursor = data;
+    for (String seg : path.split("\\.")) {
+      if (!(cursor instanceof Map<?, ?> m)) return null;
+      cursor = ((Map<String, Object>) m).get(seg);
+      if (cursor == null) return null;
     }
+    return cursor;
+  }
 
-    private String stringify(Object v) {
-        if (v == null) return "";
-        if (v instanceof String s) return s;
-        if (v instanceof Number || v instanceof Boolean) return v.toString();
-        try {
-            return mapper.writeValueAsString(v);
-        } catch (Exception e) {
-            return String.valueOf(v);
-        }
+  private String stringify(Object v) {
+    if (v == null) return "";
+    if (v instanceof String s) return s;
+    if (v instanceof Number || v instanceof Boolean) return v.toString();
+    try {
+      return mapper.writeValueAsString(v);
+    } catch (Exception e) {
+      return String.valueOf(v);
     }
+  }
 }

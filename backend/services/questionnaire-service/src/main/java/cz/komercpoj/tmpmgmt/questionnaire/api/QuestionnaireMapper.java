@@ -14,13 +14,13 @@ import org.mapstruct.Mapper;
 @Mapper(componentModel = "spring")
 public interface QuestionnaireMapper {
 
-    QuestionnaireResponse toResponse(QuestionnaireEntity entity);
+  QuestionnaireResponse toResponse(QuestionnaireEntity entity);
 
-    SectionResponse toResponse(QuestionnaireSectionEntity entity);
+  SectionResponse toResponse(QuestionnaireSectionEntity entity);
 
-    QuestionResponse toResponse(QuestionnaireQuestionEntity entity);
+  QuestionResponse toResponse(QuestionnaireQuestionEntity entity);
 
-    List<SectionResponse> toSectionResponses(List<QuestionnaireSectionEntity> entities);
+  List<SectionResponse> toSectionResponses(List<QuestionnaireSectionEntity> entities);
 
-    SessionResponse toResponse(QuestionnaireSessionEntity entity);
+  SessionResponse toResponse(QuestionnaireSessionEntity entity);
 }

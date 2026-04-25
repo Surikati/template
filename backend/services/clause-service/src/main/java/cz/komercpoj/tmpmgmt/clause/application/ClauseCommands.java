@@ -6,20 +6,21 @@ import java.util.UUID;
 
 public final class ClauseCommands {
 
-    private ClauseCommands() {}
+  private ClauseCommands() {}
 
-    public record CreateClause(
-            String slug, String name, String description, String category, UUID ownerUserId) {}
+  public record CreateClause(
+      String slug, String name, String description, String category, UUID ownerUserId) {}
 
-    public record UpdateMetadata(
-            UUID clauseId,
-            String name,
-            String description,
-            String category,
-            List<String> tags,
-            UUID actorUserId) {}
+  public record UpdateMetadata(
+      UUID clauseId,
+      String name,
+      String description,
+      String category,
+      List<String> tags,
+      UUID actorUserId) {}
 
-    public record PublishVersion(UUID clauseId, JsonNode content, String changeNote, UUID publishedBy) {}
+  public record PublishVersion(
+      UUID clauseId, JsonNode content, String changeNote, UUID publishedBy) {}
 
-    public record Archive(UUID clauseId, UUID actorUserId) {}
+  public record Archive(UUID clauseId, UUID actorUserId) {}
 }

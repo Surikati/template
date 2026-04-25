@@ -7,10 +7,10 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PositiveOrZero;
 
 public record QuestionInputDto(
-        @PositiveOrZero int ordinal,
-        @NotBlank String variablePath,
-        @NotBlank String label,
-        @NotNull QuestionType questionType,
-        JsonNode validation,
-        String visibilityRule,
-        JsonNode options) {}
+    @PositiveOrZero int ordinal,
+    @NotBlank String variablePath,
+    @NotBlank String label,
+    @NotNull QuestionType questionType,
+    JsonNode validation,
+    String visibilityRule,
+    JsonNode options) {}

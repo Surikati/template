@@ -14,26 +14,26 @@ import org.springframework.context.annotation.Configuration;
 @EnableConfigurationProperties(MinioProperties.class)
 public class MinioConfig {
 
-    private static final Logger log = LoggerFactory.getLogger(MinioConfig.class);
+  private static final Logger log = LoggerFactory.getLogger(MinioConfig.class);
 
-    @Bean
-    MinioClient minioClient(MinioProperties props) {
-        return MinioClient.builder()
-                .endpoint(props.endpoint())
-                .credentials(props.accessKey(), props.secretKey())
-                .build();
-    }
+  @Bean
+  MinioClient minioClient(MinioProperties props) {
+    return MinioClient.builder()
+        .endpoint(props.endpoint())
+        .credentials(props.accessKey(), props.secretKey())
+        .build();
+  }
 
-    /** Ensures the target bucket exists on startup. Idempotent. */
-    @Bean
-    ApplicationRunner minioBucketBootstrap(MinioClient client, MinioProperties props) {
-        return args -> {
-            boolean exists = client.bucketExists(
-                    BucketExistsArgs.builder().bucket(props.bucket()).build());
-            if (!exists) {
-                log.info("Creating MinIO bucket '{}'", props.bucket());
-                client.makeBucket(MakeBucketArgs.builder().bucket(props.bucket()).build());
-            }
-        };
-    }
+  /** Ensures the target bucket exists on startup. Idempotent. */
+  @Bean
+  ApplicationRunner minioBucketBootstrap(MinioClient client, MinioProperties props) {
+    return args -> {
+      boolean exists =
+          client.bucketExists(BucketExistsArgs.builder().bucket(props.bucket()).build());
+      if (!exists) {
+        log.info("Creating MinIO bucket '{}'", props.bucket());
+        client.makeBucket(MakeBucketArgs.builder().bucket(props.bucket()).build());
+      }
+    };
+  }
 }

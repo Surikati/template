@@ -5,10 +5,10 @@ import java.time.Instant;
 import java.util.UUID;
 
 public record ClauseVersionResponse(
-        UUID id,
-        UUID clauseId,
-        int versionNumber,
-        JsonNode content,
-        String changeNote,
-        Instant publishedAt,
-        UUID publishedBy) {}
+    UUID id,
+    UUID clauseId,
+    int versionNumber,
+    JsonNode content,
+    String changeNote,
+    Instant publishedAt,
+    UUID publishedBy) {}

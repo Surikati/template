@@ -5,4 +5,4 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 public record PublishClauseVersionRequest(
-        @NotNull JsonNode content, @Size(max = 5000) String changeNote) {}
+    @NotNull JsonNode content, @Size(max = 5000) String changeNote) {}

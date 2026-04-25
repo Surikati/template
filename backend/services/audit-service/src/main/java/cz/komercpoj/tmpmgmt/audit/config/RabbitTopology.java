@@ -12,28 +12,38 @@ import org.springframework.context.annotation.Configuration;
 @ConfigurationProperties(prefix = "tmpmgmt.audit")
 public class RabbitTopology {
 
-    private String exchange = "tmpmgmt.events";
-    private String queue = "audit.all-events";
-    private String bindingPattern = "#";
+  private String exchange = "tmpmgmt.events";
+  private String queue = "audit.all-events";
+  private String bindingPattern = "#";
 
-    public void setExchange(String exchange) { this.exchange = exchange; }
-    public void setQueue(String queue) { this.queue = queue; }
-    public void setBindingPattern(String bindingPattern) { this.bindingPattern = bindingPattern; }
+  public void setExchange(String exchange) {
+    this.exchange = exchange;
+  }
 
-    public String getQueue() { return queue; }
+  public void setQueue(String queue) {
+    this.queue = queue;
+  }
 
-    @Bean
-    TopicExchange auditExchange() {
-        return new TopicExchange(exchange, /*durable*/ true, /*autoDelete*/ false);
-    }
+  public void setBindingPattern(String bindingPattern) {
+    this.bindingPattern = bindingPattern;
+  }
 
-    @Bean
-    Queue auditQueue() {
-        return new Queue(queue, true);
-    }
+  public String getQueue() {
+    return queue;
+  }
 
-    @Bean
-    Binding auditBinding(Queue auditQueue, TopicExchange auditExchange) {
-        return BindingBuilder.bind(auditQueue).to(auditExchange).with(bindingPattern);
-    }
+  @Bean
+  TopicExchange auditExchange() {
+    return new TopicExchange(exchange, /*durable*/ true, /*autoDelete*/ false);
+  }
+
+  @Bean
+  Queue auditQueue() {
+    return new Queue(queue, true);
+  }
+
+  @Bean
+  Binding auditBinding(Queue auditQueue, TopicExchange auditExchange) {
+    return BindingBuilder.bind(auditQueue).to(auditExchange).with(bindingPattern);
+  }
 }

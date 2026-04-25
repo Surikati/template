@@ -14,20 +14,19 @@ import lombok.Setter;
 @NoArgsConstructor
 public class UserRoleEntity {
 
-    @EmbeddedId
-    private UserRoleKey id;
+  @EmbeddedId private UserRoleKey id;
 
-    @Column(name = "granted_at", nullable = false)
-    private Instant grantedAt;
+  @Column(name = "granted_at", nullable = false)
+  private Instant grantedAt;
 
-    @Column(name = "granted_by")
-    private UUID grantedBy;
+  @Column(name = "granted_by")
+  private UUID grantedBy;
 
-    public static UserRoleEntity grant(UUID userId, String roleCode, UUID grantedBy) {
-        UserRoleEntity e = new UserRoleEntity();
-        e.id = new UserRoleKey(userId, roleCode);
-        e.grantedAt = Instant.now();
-        e.grantedBy = grantedBy;
-        return e;
-    }
+  public static UserRoleEntity grant(UUID userId, String roleCode, UUID grantedBy) {
+    UserRoleEntity e = new UserRoleEntity();
+    e.id = new UserRoleKey(userId, roleCode);
+    e.grantedAt = Instant.now();
+    e.grantedBy = grantedBy;
+    return e;
+  }
 }

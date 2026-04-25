@@ -7,11 +7,11 @@ import java.util.List;
 import java.util.UUID;
 
 public record AssembleResponse(
-        UUID jobId,
-        AssemblyState state,
-        UUID documentId,
-        List<AssembledFile> files,
-        Instant completedAt) {
+    UUID jobId,
+    AssemblyState state,
+    UUID documentId,
+    List<AssembledFile> files,
+    Instant completedAt) {
 
-    public record AssembledFile(OutputFormat format, String filename, String downloadUrl) {}
+  public record AssembledFile(OutputFormat format, String filename, String downloadUrl) {}
 }

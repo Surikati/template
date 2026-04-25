@@ -6,4 +6,4 @@ import jakarta.validation.constraints.NotNull;
 import java.util.List;
 
 public record ReplaceStructureRequest(
-        @NotBlank String name, @NotNull @Valid List<SectionInputDto> sections) {}
+    @NotBlank String name, @NotNull @Valid List<SectionInputDto> sections) {}

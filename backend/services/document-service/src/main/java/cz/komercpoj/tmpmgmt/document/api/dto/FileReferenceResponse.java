@@ -5,9 +5,9 @@ import java.time.Instant;
 import java.util.UUID;
 
 public record FileReferenceResponse(
-        UUID id,
-        FileFormat format,
-        long sizeBytes,
-        String sha256,
-        String downloadUrl,
-        Instant createdAt) {}
+    UUID id,
+    FileFormat format,
+    long sizeBytes,
+    String sha256,
+    String downloadUrl,
+    Instant createdAt) {}

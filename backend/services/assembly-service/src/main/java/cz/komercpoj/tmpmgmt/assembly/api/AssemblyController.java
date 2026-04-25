@@ -19,52 +19,53 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/v1/assemblies")
 public class AssemblyController {
 
-    private final AssemblyService service;
+  private final AssemblyService service;
 
-    public AssemblyController(AssemblyService service) {
-        this.service = service;
-    }
+  public AssemblyController(AssemblyService service) {
+    this.service = service;
+  }
 
-    @PostMapping
-    public ResponseEntity<AssembleResponse> assemble(
-            @Valid @RequestBody AssembleRequest req, @AuthenticationPrincipal Jwt jwt) {
-        var result = service.assemble(new AssemblyCommand(
+  @PostMapping
+  public ResponseEntity<AssembleResponse> assemble(
+      @Valid @RequestBody AssembleRequest req, @AuthenticationPrincipal Jwt jwt) {
+    var result =
+        service.assemble(
+            new AssemblyCommand(
                 req.templateId(),
                 req.templateVersionNumber(),
                 req.data(),
                 req.formatsOrDefault(),
                 currentUserId(jwt)));
-        var job = result.job();
-        var files = result.files().stream()
-                .map(f -> new AssembleResponse.AssembledFile(f.format(), f.filename(), f.downloadUrl()))
-                .toList();
-        var body = new AssembleResponse(
-                job.getId(), job.getState(), result.documentId(), files, job.getCompletedAt());
-        return ResponseEntity.created(URI.create("/api/v1/assemblies/" + job.getId())).body(body);
-    }
+    var job = result.job();
+    var files =
+        result.files().stream()
+            .map(f -> new AssembleResponse.AssembledFile(f.format(), f.filename(), f.downloadUrl()))
+            .toList();
+    var body =
+        new AssembleResponse(
+            job.getId(), job.getState(), result.documentId(), files, job.getCompletedAt());
+    return ResponseEntity.created(URI.create("/api/v1/assemblies/" + job.getId())).body(body);
+  }
 
-    @PostMapping(value = "/preview", produces = MediaType.TEXT_HTML_VALUE)
-    public String preview(@Valid @RequestBody AssembleRequest req, @AuthenticationPrincipal Jwt jwt) {
-        return service.preview(new AssemblyCommand(
-                req.templateId(),
-                req.templateVersionNumber(),
-                req.data(),
-                List.of(OutputFormat.DOCX),
-                currentUserId(jwt)));
-    }
+  @PostMapping(value = "/preview", produces = MediaType.TEXT_HTML_VALUE)
+  public String preview(@Valid @RequestBody AssembleRequest req, @AuthenticationPrincipal Jwt jwt) {
+    return service.preview(
+        new AssemblyCommand(
+            req.templateId(),
+            req.templateVersionNumber(),
+            req.data(),
+            List.of(OutputFormat.DOCX),
+            currentUserId(jwt)));
+  }
 
-    @GetMapping("/{id}")
-    public AssembleResponse get(@PathVariable UUID id) {
-        var job = service.getById(id);
-        return new AssembleResponse(
-                job.getId(),
-                job.getState(),
-                job.getResultDocumentId(),
-                List.of(),
-                job.getCompletedAt());
-    }
+  @GetMapping("/{id}")
+  public AssembleResponse get(@PathVariable UUID id) {
+    var job = service.getById(id);
+    return new AssembleResponse(
+        job.getId(), job.getState(), job.getResultDocumentId(), List.of(), job.getCompletedAt());
+  }
 
-    private UUID currentUserId(Jwt jwt) {
-        return UUID.fromString(jwt.getSubject());
-    }
+  private UUID currentUserId(Jwt jwt) {
+    return UUID.fromString(jwt.getSubject());
+  }
 }

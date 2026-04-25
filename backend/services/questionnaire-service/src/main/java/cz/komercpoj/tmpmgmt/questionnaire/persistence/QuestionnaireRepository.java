@@ -6,8 +6,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface QuestionnaireRepository extends JpaRepository<QuestionnaireEntity, UUID> {
 
-    Optional<QuestionnaireEntity> findByTemplateIdAndTemplateVersionNumber(
-            UUID templateId, int templateVersionNumber);
+  Optional<QuestionnaireEntity> findByTemplateIdAndTemplateVersionNumber(
+      UUID templateId, int templateVersionNumber);
 
-    boolean existsByTemplateIdAndTemplateVersionNumber(UUID templateId, int templateVersionNumber);
+  boolean existsByTemplateIdAndTemplateVersionNumber(UUID templateId, int templateVersionNumber);
 }

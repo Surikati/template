@@ -8,7 +8,6 @@ import org.springframework.web.bind.annotation.PathVariable;
 @FeignClient(name = "template-service", url = "${tmpmgmt.clients.template-service-url}")
 public interface TemplateServiceClient {
 
-    @GetMapping("/api/v1/templates/{templateId}/versions/{versionNumber}")
-    TemplateVersionDto getVersion(
-            @PathVariable UUID templateId, @PathVariable int versionNumber);
+  @GetMapping("/api/v1/templates/{templateId}/versions/{versionNumber}")
+  TemplateVersionDto getVersion(@PathVariable UUID templateId, @PathVariable int versionNumber);
 }

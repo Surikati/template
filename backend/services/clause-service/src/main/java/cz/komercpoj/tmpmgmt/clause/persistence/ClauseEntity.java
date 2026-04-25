@@ -17,55 +17,54 @@ import org.hibernate.type.SqlTypes;
 @NoArgsConstructor
 public class ClauseEntity {
 
-    @Id
-    private UUID id;
+  @Id private UUID id;
 
-    @Column(nullable = false, unique = true, length = 200)
-    private String slug;
+  @Column(nullable = false, unique = true, length = 200)
+  private String slug;
 
-    @Column(nullable = false, length = 500)
-    private String name;
+  @Column(nullable = false, length = 500)
+  private String name;
 
-    @Column(columnDefinition = "TEXT")
-    private String description;
+  @Column(columnDefinition = "TEXT")
+  private String description;
 
-    @Column(length = 100)
-    private String category;
+  @Column(length = 100)
+  private String category;
 
-    @JdbcTypeCode(SqlTypes.ARRAY)
-    @Column(columnDefinition = "text[]", nullable = false)
-    private String[] tags = new String[0];
+  @JdbcTypeCode(SqlTypes.ARRAY)
+  @Column(columnDefinition = "text[]", nullable = false)
+  private String[] tags = new String[0];
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 20)
-    private ClauseStatus status;
+  @Enumerated(EnumType.STRING)
+  @Column(nullable = false, length = 20)
+  private ClauseStatus status;
 
-    @Column(name = "owner_user_id", nullable = false)
-    private UUID ownerUserId;
+  @Column(name = "owner_user_id", nullable = false)
+  private UUID ownerUserId;
 
-    @Column(name = "created_at", nullable = false)
-    private Instant createdAt;
+  @Column(name = "created_at", nullable = false)
+  private Instant createdAt;
 
-    @Column(name = "updated_at", nullable = false)
-    private Instant updatedAt;
+  @Column(name = "updated_at", nullable = false)
+  private Instant updatedAt;
 
-    public static ClauseEntity newActive(
-            UUID id, String slug, String name, String description, String category, UUID ownerUserId) {
-        ClauseEntity c = new ClauseEntity();
-        Instant now = Instant.now();
-        c.id = id;
-        c.slug = slug;
-        c.name = name;
-        c.description = description;
-        c.category = category;
-        c.status = ClauseStatus.ACTIVE;
-        c.ownerUserId = ownerUserId;
-        c.createdAt = now;
-        c.updatedAt = now;
-        return c;
-    }
+  public static ClauseEntity newActive(
+      UUID id, String slug, String name, String description, String category, UUID ownerUserId) {
+    ClauseEntity c = new ClauseEntity();
+    Instant now = Instant.now();
+    c.id = id;
+    c.slug = slug;
+    c.name = name;
+    c.description = description;
+    c.category = category;
+    c.status = ClauseStatus.ACTIVE;
+    c.ownerUserId = ownerUserId;
+    c.createdAt = now;
+    c.updatedAt = now;
+    return c;
+  }
 
-    public void touchUpdated() {
-        this.updatedAt = Instant.now();
-    }
+  public void touchUpdated() {
+    this.updatedAt = Instant.now();
+  }
 }
