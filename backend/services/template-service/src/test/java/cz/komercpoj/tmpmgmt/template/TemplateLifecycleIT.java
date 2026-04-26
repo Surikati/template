@@ -215,6 +215,85 @@ class TemplateLifecycleIT {
   }
 
   @Test
+  void exportImport_roundTrip_preservesContentAndVersions() {
+    // 1. Build a template with two published versions and a draft on top
+    var t =
+        service.create(
+            new TemplateCommands.CreateTemplate(
+                "exportable", "Exportable", "Export source", "legal", actor));
+    UUID sourceId = t.getId();
+    ObjectNode schema = mapper.createObjectNode().put("type", "object");
+
+    ObjectNode v1Doc = mapper.createObjectNode().put("type", "doc").put("rev", 1);
+    service.saveDraft(new TemplateCommands.SaveDraft(sourceId, v1Doc, schema, actor));
+    service.publishVersion(new TemplateCommands.PublishVersion(sourceId, "v1", actor));
+
+    ObjectNode v2Doc = mapper.createObjectNode().put("type", "doc").put("rev", 2);
+    service.saveDraft(new TemplateCommands.SaveDraft(sourceId, v2Doc, schema, actor));
+    service.publishVersion(new TemplateCommands.PublishVersion(sourceId, "v2", actor));
+
+    ObjectNode draftDoc = mapper.createObjectNode().put("type", "doc").put("rev", 3);
+    service.saveDraft(new TemplateCommands.SaveDraft(sourceId, draftDoc, schema, actor));
+
+    // 2. Re-import as a new template under a fresh slug
+    var bundleVersions =
+        service.listVersions(sourceId).stream()
+            .sorted((a, b) -> Integer.compare(a.getVersionNumber(), b.getVersionNumber()))
+            .map(
+                v ->
+                    new TemplateCommands.ImportedVersion(
+                        v.getVersionNumber(),
+                        v.getContent(),
+                        v.getVariablesSchema(),
+                        v.getChangeNote()))
+            .toList();
+    var draft = service.getDraft(sourceId);
+    var imported =
+        service.importBundle(
+            new TemplateCommands.ImportBundle(
+                "exportable-clone",
+                "Exportable Clone",
+                "Cloned from export",
+                "legal",
+                List.of("imported"),
+                draft.getContent(),
+                draft.getVariablesSchema(),
+                bundleVersions,
+                actor));
+
+    // 3. Imported template carries the same versions and draft
+    assertThat(imported.getId()).isNotEqualTo(sourceId);
+    assertThat(imported.getSlug()).isEqualTo("exportable-clone");
+    assertThat(service.listVersions(imported.getId()))
+        .extracting(v -> v.getVersionNumber())
+        .containsExactly(2, 1);
+    assertThat(service.listVersions(imported.getId()))
+        .anySatisfy(
+            v -> assertThat(v.getContent().get("rev").asInt()).isEqualTo(v.getVersionNumber()));
+    assertThat(service.getDraft(imported.getId()).getContent().get("rev").asInt()).isEqualTo(3);
+  }
+
+  @Test
+  void importBundle_withTakenSlug_throwsConflict() {
+    service.create(new TemplateCommands.CreateTemplate("taken", "Taken", null, null, actor));
+
+    assertThatThrownBy(
+            () ->
+                service.importBundle(
+                    new TemplateCommands.ImportBundle(
+                        "taken",
+                        "Different Name",
+                        null,
+                        null,
+                        null,
+                        mapper.createObjectNode(),
+                        mapper.createObjectNode(),
+                        List.of(),
+                        actor)))
+        .isInstanceOf(ConflictException.class);
+  }
+
+  @Test
   void publishOnArchivedTemplate_throwsConflict() {
     var t =
         service.create(

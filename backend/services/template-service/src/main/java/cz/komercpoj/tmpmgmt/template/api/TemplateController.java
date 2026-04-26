@@ -2,6 +2,7 @@ package cz.komercpoj.tmpmgmt.template.api;
 
 import cz.komercpoj.tmpmgmt.template.api.dto.CreateTemplateRequest;
 import cz.komercpoj.tmpmgmt.template.api.dto.PublishVersionRequest;
+import cz.komercpoj.tmpmgmt.template.api.dto.TemplateBundle;
 import cz.komercpoj.tmpmgmt.template.api.dto.TemplateDraftResponse;
 import cz.komercpoj.tmpmgmt.template.api.dto.TemplateResponse;
 import cz.komercpoj.tmpmgmt.template.api.dto.TemplateVersionDiffResponse;
@@ -111,6 +112,22 @@ public class TemplateController {
     return ResponseEntity.created(
             URI.create("/api/v1/templates/" + id + "/versions/" + published.getVersionNumber()))
         .body(mapper.toResponse(published));
+  }
+
+  @GetMapping("/{id}/export")
+  @PreAuthorize("hasAnyRole('ADMIN','TEMPLATE_EDITOR')")
+  public TemplateBundle exportBundle(@PathVariable UUID id) {
+    return mapper.toBundle(service.getById(id), service.getDraft(id), service.listVersions(id));
+  }
+
+  @PostMapping("/import")
+  @PreAuthorize("hasAnyRole('ADMIN','TEMPLATE_EDITOR')")
+  public ResponseEntity<TemplateResponse> importBundle(
+      @Valid @RequestBody TemplateBundle bundle,
+      @org.springframework.security.core.annotation.AuthenticationPrincipal Jwt jwt) {
+    var imported = service.importBundle(mapper.toImportCommand(bundle, currentUserId(jwt)));
+    return ResponseEntity.created(URI.create("/api/v1/templates/" + imported.getId()))
+        .body(mapper.toResponse(imported));
   }
 
   @PostMapping("/{id}/archive")

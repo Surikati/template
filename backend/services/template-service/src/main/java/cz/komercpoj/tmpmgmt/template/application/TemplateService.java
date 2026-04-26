@@ -7,6 +7,8 @@ import cz.komercpoj.tmpmgmt.common.NotFoundException;
 import cz.komercpoj.tmpmgmt.outbox.OutboxWriter;
 import cz.komercpoj.tmpmgmt.template.application.TemplateCommands.Archive;
 import cz.komercpoj.tmpmgmt.template.application.TemplateCommands.CreateTemplate;
+import cz.komercpoj.tmpmgmt.template.application.TemplateCommands.ImportBundle;
+import cz.komercpoj.tmpmgmt.template.application.TemplateCommands.ImportedVersion;
 import cz.komercpoj.tmpmgmt.template.application.TemplateCommands.PublishVersion;
 import cz.komercpoj.tmpmgmt.template.application.TemplateCommands.SaveDraft;
 import cz.komercpoj.tmpmgmt.template.application.TemplateCommands.UpdateMetadata;
@@ -265,6 +267,52 @@ public class TemplateService {
             cmd.publishedBy(),
             Instant.now()));
     return v;
+  }
+
+  @Transactional
+  public TemplateEntity importBundle(ImportBundle cmd) {
+    if (templates.existsBySlug(cmd.slug())) {
+      throw new ConflictException("template.slug_taken", "Slug already in use: " + cmd.slug());
+    }
+    UUID id = UUID.randomUUID();
+    TemplateEntity template =
+        TemplateEntity.newActive(
+            id, cmd.slug(), cmd.name(), cmd.description(), cmd.category(), cmd.importedBy());
+    if (cmd.tags() != null && !cmd.tags().isEmpty()) {
+      template.setTags(cmd.tags().toArray(new String[0]));
+    }
+    templates.save(template);
+
+    drafts.save(
+        TemplateDraftEntity.empty(id, cmd.draftContent(), cmd.draftSchema(), cmd.importedBy()));
+
+    for (ImportedVersion v : cmd.versions()) {
+      validator.validate(v.content(), v.variablesSchema());
+      versions.save(
+          TemplateVersionEntity.publish(
+              UUID.randomUUID(),
+              id,
+              v.versionNumber(),
+              v.content(),
+              v.variablesSchema(),
+              v.changeNote(),
+              cmd.importedBy()));
+    }
+
+    outbox.stage(
+        TemplateEvents.AGGREGATE_TYPE,
+        id.toString(),
+        TemplateEvents.TYPE_CREATED,
+        new TemplateEvents.TemplateCreated(
+            id,
+            cmd.slug(),
+            cmd.name(),
+            cmd.description(),
+            cmd.category(),
+            cmd.tags() == null ? List.of() : cmd.tags(),
+            cmd.importedBy(),
+            Instant.now()));
+    return template;
   }
 
   @Transactional

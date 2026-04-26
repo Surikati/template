@@ -26,4 +26,18 @@ public final class TemplateCommands {
   public record PublishVersion(UUID templateId, String changeNote, UUID publishedBy) {}
 
   public record Archive(UUID templateId, UUID actorUserId) {}
+
+  public record ImportBundle(
+      String slug,
+      String name,
+      String description,
+      String category,
+      List<String> tags,
+      JsonNode draftContent,
+      JsonNode draftSchema,
+      List<ImportedVersion> versions,
+      UUID importedBy) {}
+
+  public record ImportedVersion(
+      int versionNumber, JsonNode content, JsonNode variablesSchema, String changeNote) {}
 }
