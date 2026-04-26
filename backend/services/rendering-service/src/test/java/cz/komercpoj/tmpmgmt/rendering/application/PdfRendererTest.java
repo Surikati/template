@@ -15,7 +15,7 @@ class PdfRendererTest {
   private final HtmlRenderer htmlRenderer =
       new HtmlRenderer(new AntlrExpressionEvaluator(), new VariableFormatter());
   private final PdfRenderer renderer =
-      new PdfRenderer(htmlRenderer, new RenderingProperties(null, null, null, null, null));
+      new PdfRenderer(htmlRenderer, new RenderingProperties(null, null, null, null, null, null));
 
   @Test
   void rendersBasicAst_producesPdfMagic() throws Exception {
@@ -44,7 +44,32 @@ class PdfRendererTest {
     // Bogus path — should warn but still produce a valid PDF via fallback.
     PdfRenderer fallback =
         new PdfRenderer(
-            htmlRenderer, new RenderingProperties(null, null, null, "/nonexistent/font.ttf", null));
+            htmlRenderer,
+            new RenderingProperties(null, null, null, "/nonexistent/font.ttf", null, null));
+    JsonNode ast =
+        mapper.readTree(
+            """
+            { "type": "doc", "content": [
+              { "type": "paragraph", "content": [
+                { "type": "text", "text": "Test" }
+              ]}
+            ]}
+            """);
+
+    byte[] pdf = fallback.render(ast, Map.of());
+
+    assertThat(pdf).hasSizeGreaterThan(100);
+    assertThat(new String(pdf, 0, 5)).isEqualTo("%PDF-");
+  }
+
+  @Test
+  void bogusClasspathFont_logsWarningAndFallsBack() throws Exception {
+    // Resource doesn't exist on the test classpath — renderer should warn,
+    // skip the font, and still produce a valid PDF.
+    PdfRenderer fallback =
+        new PdfRenderer(
+            htmlRenderer,
+            new RenderingProperties(null, null, null, null, null, "fonts/nonexistent.ttf"));
     JsonNode ast =
         mapper.readTree(
             """

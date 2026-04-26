@@ -29,6 +29,9 @@ tmpmgmt:
     # as empty boxes in PDFs. Deployers should bundle a font and point this at it.
     pdf-font-path: ${PDF_FONT_PATH:}
     pdf-font-family: ${PDF_FONT_FAMILY:DejaVu Sans}
+    # Optional alternative to pdf-font-path: load the TTF from a classpath resource
+    # (so a deployer's overlay JAR / image can ship the font as a Maven dependency).
+    pdf-font-classpath: ${PDF_FONT_CLASSPATH:}
 
 management:
   endpoints:

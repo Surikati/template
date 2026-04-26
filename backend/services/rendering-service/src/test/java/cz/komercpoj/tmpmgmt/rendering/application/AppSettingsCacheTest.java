@@ -12,9 +12,9 @@ import org.junit.jupiter.api.Test;
 class AppSettingsCacheTest {
 
   private static final RenderingProperties CS_DEFAULTS =
-      new RenderingProperties(null, null, null, null, null);
+      new RenderingProperties(null, null, null, null, null, null);
   private static final RenderingProperties EN_DEFAULTS =
-      new RenderingProperties("en-US", "America/New_York", "USD", null, null);
+      new RenderingProperties("en-US", "America/New_York", "USD", null, null, null);
 
   @Test
   void primesFromAdminService_onConstruction() {

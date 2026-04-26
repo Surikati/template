@@ -65,7 +65,7 @@ public class VariableFormatter {
 
   /** Convenience for tests — uses cs_CZ / Europe/Prague / CZK. */
   public VariableFormatter() {
-    this(new RenderingProperties(null, null, null, null, null));
+    this(new RenderingProperties(null, null, null, null, null, null));
   }
 
   /**

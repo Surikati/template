@@ -6,6 +6,7 @@ import cz.komercpoj.tmpmgmt.common.DomainException;
 import cz.komercpoj.tmpmgmt.rendering.config.RenderingProperties;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.util.List;
 import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,22 +31,69 @@ public class PdfRenderer {
 
   private static final String XHTML_EPILOG = "</body></html>";
 
+  /** Common Linux locations for DejaVu / Noto installed via {@code apt-get install fonts-*}. */
+  private static final List<String> AUTO_DISCOVERY_PATHS =
+      List.of(
+          "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+          "/usr/share/fonts/dejavu/DejaVuSans.ttf",
+          "/usr/share/fonts/TTF/DejaVuSans.ttf",
+          "/usr/share/fonts/truetype/noto/NotoSans-Regular.ttf",
+          "/usr/share/fonts/noto/NotoSans-Regular.ttf");
+
   private final HtmlRenderer htmlRenderer;
   private final RenderingProperties props;
-  private final File registeredFont;
+  private final File registeredFontFile;
+  private final String registeredClasspathFont;
 
   public PdfRenderer(HtmlRenderer htmlRenderer, RenderingProperties props) {
     this.htmlRenderer = htmlRenderer;
     this.props = props;
-    this.registeredFont = resolveFont(props.pdfFontPath());
-    if (props.pdfFontPath() != null && registeredFont == null) {
+    this.registeredFontFile = resolveFontFile(props);
+    this.registeredClasspathFont = registeredFontFile == null ? resolveClasspathFont(props) : null;
+    logResolution();
+  }
+
+  private static File resolveFontFile(RenderingProperties props) {
+    String configured = props.pdfFontPath();
+    if (configured != null && !configured.isBlank()) {
+      File f = new File(configured);
+      if (f.exists() && f.isFile()) return f;
       log.warn(
-          "PDF font path configured ({}) but file not found — falling back to PDFBox defaults."
-              + " Czech diacritics may render as empty boxes.",
-          props.pdfFontPath());
-    } else if (registeredFont != null) {
+          "PDF font path configured ({}) but file not found — trying classpath / auto-discovery.",
+          configured);
+    }
+    for (String candidate : AUTO_DISCOVERY_PATHS) {
+      File f = new File(candidate);
+      if (f.exists() && f.isFile()) return f;
+    }
+    return null;
+  }
+
+  private static String resolveClasspathFont(RenderingProperties props) {
+    String configured = props.pdfFontClasspath();
+    if (configured == null || configured.isBlank()) return null;
+    if (PdfRenderer.class.getClassLoader().getResource(configured) == null) {
+      log.warn("PDF font classpath configured ({}) but resource not found.", configured);
+      return null;
+    }
+    return configured;
+  }
+
+  private void logResolution() {
+    if (registeredFontFile != null) {
       log.info(
-          "PDF font registered: {} ({})", props.pdfFontFamily(), registeredFont.getAbsolutePath());
+          "PDF font registered from filesystem: {} ({})",
+          props.pdfFontFamily(),
+          registeredFontFile.getAbsolutePath());
+    } else if (registeredClasspathFont != null) {
+      log.info(
+          "PDF font registered from classpath: {} ({})",
+          props.pdfFontFamily(),
+          registeredClasspathFont);
+    } else {
+      log.warn(
+          "No PDF font registered (filesystem path, classpath resource and auto-discovery all"
+              + " failed). Czech diacritics may render as empty boxes.");
     }
   }
 
@@ -55,9 +103,13 @@ public class PdfRenderer {
     try (ByteArrayOutputStream os = new ByteArrayOutputStream()) {
       PdfRendererBuilder builder = new PdfRendererBuilder();
       builder.useFastMode();
-      if (registeredFont != null) {
+      if (registeredFontFile != null) {
         // null weight/style → builder picks defaults; family name must match the CSS.
-        builder.useFont(registeredFont, props.pdfFontFamily());
+        builder.useFont(registeredFontFile, props.pdfFontFamily());
+      } else if (registeredClasspathFont != null) {
+        builder.useFont(
+            () -> PdfRenderer.class.getClassLoader().getResourceAsStream(registeredClasspathFont),
+            props.pdfFontFamily());
       }
       builder.withHtmlContent(xhtml, null);
       builder.toStream(os);
@@ -92,11 +144,5 @@ public class PdfRenderer {
         + " margin: 0 !important; background: transparent !important; }"
         + "</style>"
         + "</head><body>";
-  }
-
-  private static File resolveFont(String path) {
-    if (path == null || path.isBlank()) return null;
-    File f = new File(path);
-    return f.exists() && f.isFile() ? f : null;
   }
 }
