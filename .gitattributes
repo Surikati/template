@@ -1,0 +1,42 @@
+# Default: detect text files automatically and store with LF in git.
+# Working tree EOL is decided by core.autocrlf (Windows checks out CRLF).
+* text=auto eol=lf
+
+# Force LF on shell scripts and Maven/Gradle wrappers — they're invoked
+# by bash on Linux/macOS and break with CRLF.
+*.sh        text eol=lf
+*.bash      text eol=lf
+mvnw        text eol=lf
+gradlew     text eol=lf
+
+# Windows-only scripts: keep CRLF so cmd.exe / PowerShell parses them.
+*.bat       text eol=crlf
+*.cmd       text eol=crlf
+*.ps1       text eol=crlf
+
+# Binary blobs: never diff, never normalise.
+*.png       binary
+*.jpg       binary
+*.jpeg      binary
+*.gif       binary
+*.ico       binary
+*.svg       text
+*.pdf       binary
+*.woff      binary
+*.woff2     binary
+*.ttf       binary
+*.eot       binary
+*.otf       binary
+*.zip       binary
+*.tar       binary
+*.gz        binary
+*.7z        binary
+*.jar       binary
+*.war       binary
+*.class     binary
+*.docx      binary
+*.xlsx      binary
+*.pptx      binary
+
+# Lockfiles: keep verbatim, no diff noise.
+package-lock.json   linguist-generated=true
