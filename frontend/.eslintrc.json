@@ -9,6 +9,23 @@
   "overrides": [
     {
       "files": ["*.ts"],
+      "parserOptions": {
+        "project": [
+          "./tsconfig.json",
+          "./projects/shell/tsconfig.app.json",
+          "./projects/shell/tsconfig.spec.json",
+          "./projects/libs/core/tsconfig.lib.json",
+          "./projects/libs/core/tsconfig.spec.json",
+          "./projects/libs/ui-kit/tsconfig.lib.json",
+          "./projects/libs/ui-kit/tsconfig.spec.json",
+          "./projects/libs/api-client/tsconfig.lib.json",
+          "./projects/libs/api-client/tsconfig.spec.json",
+          "./projects/libs/template-editor/tsconfig.lib.json",
+          "./projects/libs/template-editor/tsconfig.spec.json",
+          "./projects/libs/questionnaire-runner/tsconfig.lib.json",
+          "./projects/libs/questionnaire-runner/tsconfig.spec.json"
+        ]
+      },
       "extends": [
         "eslint:recommended",
         "plugin:@typescript-eslint/recommended",
