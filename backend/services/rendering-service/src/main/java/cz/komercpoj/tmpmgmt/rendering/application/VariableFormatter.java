@@ -13,6 +13,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.Currency;
 import java.util.Locale;
 import java.util.Set;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
@@ -22,16 +23,21 @@ import org.springframework.web.context.request.ServletRequestAttributes;
  *
  * <ul>
  *   <li>{@code number[:decimals]} — 1234.5 → {@code 1 234,50}
- *   <li>{@code currency[:code]} — 1234.5 → {@code 1 234,50 Kč} (default code from config)
+ *   <li>{@code currency[:code]} — 1234.5 → {@code 1 234,50 Kč} (default code from settings)
  *   <li>{@code date[:pattern]} — "2026-04-23" → {@code 23.04.2026}
  *   <li>{@code datetime[:pattern]} — Instant → {@code 23.04.2026 15:30}
  * </ul>
  *
- * <p>Locale, timezone and default currency come from {@link RenderingProperties} as the server-wide
- * default. Each call also looks at the current HTTP request (if any) for the headers {@code
- * X-Locale}, {@code X-Timezone}, {@code X-Currency} and uses them to override the defaults —
- * letting multi-tenant callers pick a locale per request without code changes. Outside of a request
- * scope (tests, async work) only the defaults are used.
+ * <p>Per-call resolution order for locale / timezone / currency:
+ *
+ * <ol>
+ *   <li>{@code X-Locale}, {@code X-Timezone}, {@code X-Currency} request headers — let multi-tenant
+ *       callers pick a locale per request.
+ *   <li>{@link AppSettingsCache} — admin-managed singleton from admin-service (5-min TTL),
+ *       reflected immediately when the admin updates settings.
+ *   <li>{@link RenderingProperties} — process-level fallback baked into config, used only when no
+ *       cache is wired (tests) or admin-service has never returned a snapshot.
+ * </ol>
  */
 @Component
 public class VariableFormatter {
@@ -46,19 +52,29 @@ public class VariableFormatter {
   private static final Set<String> ISO_LANGUAGES = Set.of(Locale.getISOLanguages());
   private static final Set<String> ISO_COUNTRIES = Set.of(Locale.getISOCountries());
 
-  private final Locale defaultLocale;
-  private final ZoneId defaultZone;
-  private final String defaultCurrency;
+  private final FormatterSettings serverDefaults;
+  private AppSettingsCache cache;
 
   public VariableFormatter(RenderingProperties props) {
-    this.defaultLocale = Locale.forLanguageTag(props.locale());
-    this.defaultZone = ZoneId.of(props.timezone());
-    this.defaultCurrency = props.defaultCurrency();
+    this.serverDefaults =
+        new FormatterSettings(
+            Locale.forLanguageTag(props.locale()),
+            ZoneId.of(props.timezone()),
+            props.defaultCurrency());
   }
 
   /** Convenience for tests — uses cs_CZ / Europe/Prague / CZK. */
   public VariableFormatter() {
     this(new RenderingProperties(null, null, null, null, null));
+  }
+
+  /**
+   * Setter-injected so production gets the persisted defaults via {@link AppSettingsCache}, while
+   * unit tests using the bare constructor keep the existing process-level fallback unchanged.
+   */
+  @Autowired(required = false)
+  public void setCache(AppSettingsCache cache) {
+    this.cache = cache;
   }
 
   public String format(Object value, String format) {
@@ -69,7 +85,7 @@ public class VariableFormatter {
     String type = parts[0];
     String pattern = parts.length > 1 ? parts[1] : null;
 
-    Settings s = settings();
+    FormatterSettings s = settings();
     return switch (type) {
       case "number" -> formatNumber(value, pattern, s);
       case "currency" -> formatCurrency(value, pattern, s);
@@ -79,43 +95,43 @@ public class VariableFormatter {
     };
   }
 
-  private String formatNumber(Object v, String decimalsStr, Settings s) {
+  private String formatNumber(Object v, String decimalsStr, FormatterSettings s) {
     if (!(v instanceof Number n)) return String.valueOf(v);
     int decimals = parseDecimals(decimalsStr, 2);
-    NumberFormat nf = NumberFormat.getNumberInstance(s.locale);
+    NumberFormat nf = NumberFormat.getNumberInstance(s.locale());
     nf.setMinimumFractionDigits(decimals);
     nf.setMaximumFractionDigits(decimals);
     return nf.format(n.doubleValue());
   }
 
-  private String formatCurrency(Object v, String currencyCode, Settings s) {
+  private String formatCurrency(Object v, String currencyCode, FormatterSettings s) {
     if (!(v instanceof Number n)) return String.valueOf(v);
-    NumberFormat nf = NumberFormat.getCurrencyInstance(s.locale);
+    NumberFormat nf = NumberFormat.getCurrencyInstance(s.locale());
     try {
       nf.setCurrency(
           Currency.getInstance(
-              currencyCode == null || currencyCode.isBlank() ? s.currency : currencyCode));
+              currencyCode == null || currencyCode.isBlank() ? s.currency() : currencyCode));
     } catch (IllegalArgumentException e) {
       // unknown currency code — keep locale default
     }
     return nf.format(n.doubleValue());
   }
 
-  private String formatDate(Object v, String pattern, boolean withTime, Settings s) {
+  private String formatDate(Object v, String pattern, boolean withTime, FormatterSettings s) {
     String p =
         (pattern == null || pattern.isBlank())
             ? (withTime ? DEFAULT_DATETIME_PATTERN : DEFAULT_DATE_PATTERN)
             : pattern;
-    DateTimeFormatter dtf = DateTimeFormatter.ofPattern(p).withLocale(s.locale);
+    DateTimeFormatter dtf = DateTimeFormatter.ofPattern(p).withLocale(s.locale());
 
     try {
       if (v instanceof LocalDate ld) return ld.format(dtf);
       if (v instanceof LocalDateTime ldt) return ldt.format(dtf);
-      if (v instanceof Instant inst) return ZonedDateTime.ofInstant(inst, s.zone).format(dtf);
+      if (v instanceof Instant inst) return ZonedDateTime.ofInstant(inst, s.zone()).format(dtf);
       if (v instanceof String str) {
         // Try Instant (ISO 8601 with time) first, then LocalDate.
         try {
-          return ZonedDateTime.ofInstant(Instant.parse(str), s.zone).format(dtf);
+          return ZonedDateTime.ofInstant(Instant.parse(str), s.zone()).format(dtf);
         } catch (Exception ignored) {
           return LocalDate.parse(str).format(dtf);
         }
@@ -126,49 +142,50 @@ public class VariableFormatter {
     return String.valueOf(v);
   }
 
-  private Settings settings() {
+  private FormatterSettings settings() {
+    FormatterSettings fallback = (cache != null) ? cache.get() : serverDefaults;
     HttpServletRequest req = currentRequest();
     if (req == null) {
-      return new Settings(defaultLocale, defaultZone, defaultCurrency);
+      return fallback;
     }
-    return new Settings(
-        resolveLocale(req.getHeader(LOCALE_HEADER)),
-        resolveZone(req.getHeader(TIMEZONE_HEADER)),
-        resolveCurrency(req.getHeader(CURRENCY_HEADER)));
+    return new FormatterSettings(
+        resolveLocale(req.getHeader(LOCALE_HEADER), fallback.locale()),
+        resolveZone(req.getHeader(TIMEZONE_HEADER), fallback.zone()),
+        resolveCurrency(req.getHeader(CURRENCY_HEADER), fallback.currency()));
   }
 
-  private Locale resolveLocale(String header) {
-    if (header == null || header.isBlank()) return defaultLocale;
+  private Locale resolveLocale(String header, Locale fallback) {
+    if (header == null || header.isBlank()) return fallback;
     Locale parsed = Locale.forLanguageTag(header);
     String lang = parsed.getLanguage();
     // forLanguageTag is permissive: it stores arbitrary 2-3 letter language strings
     // (e.g. "not" from "not-a-real-tag") even though NumberFormat then silently
     // degrades to JVM root locale. Validate against the ISO 639-1 list explicitly.
     if (lang.isEmpty() || !ISO_LANGUAGES.contains(lang)) {
-      return defaultLocale;
+      return fallback;
     }
     String country = parsed.getCountry();
     if (!country.isEmpty() && !ISO_COUNTRIES.contains(country)) {
-      return defaultLocale;
+      return fallback;
     }
     return parsed;
   }
 
-  private ZoneId resolveZone(String header) {
-    if (header == null || header.isBlank()) return defaultZone;
+  private ZoneId resolveZone(String header, ZoneId fallback) {
+    if (header == null || header.isBlank()) return fallback;
     try {
       return ZoneId.of(header);
     } catch (DateTimeException e) {
-      return defaultZone;
+      return fallback;
     }
   }
 
-  private String resolveCurrency(String header) {
-    if (header == null || header.isBlank()) return defaultCurrency;
+  private String resolveCurrency(String header, String fallback) {
+    if (header == null || header.isBlank()) return fallback;
     try {
       return Currency.getInstance(header).getCurrencyCode();
     } catch (IllegalArgumentException e) {
-      return defaultCurrency;
+      return fallback;
     }
   }
 
@@ -185,6 +202,4 @@ public class VariableFormatter {
       return fallback;
     }
   }
-
-  private record Settings(Locale locale, ZoneId zone, String currency) {}
 }

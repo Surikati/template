@@ -17,6 +17,8 @@ spring:
 tmpmgmt:
   outbox:
     enabled: false
+  clients:
+    admin-service-url: ${ADMIN_SERVICE_URL:http://admin-service:8087}
   rendering:
     libreoffice-binary: ${LIBREOFFICE_BIN:/usr/bin/soffice}
     max-concurrent-conversions: 4
