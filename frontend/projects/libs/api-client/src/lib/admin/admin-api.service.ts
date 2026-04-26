@@ -4,8 +4,10 @@ import { Observable } from 'rxjs';
 import { APP_CONFIG } from '@tmpmgmt/core';
 
 import {
+  AppSettingsResponse,
   RoleResponse,
   SyncResponse,
+  UpdateAppSettingsRequest,
   UserResponse,
   UserRoleResponse,
 } from '../models/admin';
@@ -48,5 +50,13 @@ export class AdminApiService {
 
   revokeRole(userId: string, roleCode: string): Observable<void> {
     return this.http.delete<void>(`${this.base}/users/${userId}/roles/${roleCode}`);
+  }
+
+  getSettings(): Observable<AppSettingsResponse> {
+    return this.http.get<AppSettingsResponse>(`${this.base}/admin/settings`);
+  }
+
+  updateSettings(req: UpdateAppSettingsRequest): Observable<AppSettingsResponse> {
+    return this.http.put<AppSettingsResponse>(`${this.base}/admin/settings`, req);
   }
 }

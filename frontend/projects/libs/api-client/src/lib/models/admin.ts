@@ -27,3 +27,17 @@ export interface SyncResponse {
   updated: number;
   totalFetched: number;
 }
+
+export interface AppSettingsResponse {
+  locale: string;
+  timezone: string;
+  currency: string;
+  updatedAt: string;
+  updatedBy?: string;
+}
+
+export interface UpdateAppSettingsRequest {
+  locale: string;
+  timezone: string;
+  currency: string;
+}

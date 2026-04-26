@@ -13,6 +13,11 @@ export const adminRoutes: Routes = [
         path: 'audit',
         loadComponent: () => import('./audit-viewer.component').then((m) => m.AuditViewerComponent),
       },
+      {
+        path: 'settings',
+        loadComponent: () =>
+          import('./app-settings.component').then((m) => m.AppSettingsComponent),
+      },
       { path: '', pathMatch: 'full', redirectTo: 'users' },
     ],
   },

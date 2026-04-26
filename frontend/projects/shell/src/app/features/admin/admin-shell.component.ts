@@ -14,6 +14,9 @@ import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
       <a routerLink="audit" routerLinkActive="active">
         <i class="pi pi-history"></i> Audit log
       </a>
+      <a routerLink="settings" routerLinkActive="active">
+        <i class="pi pi-cog"></i> Nastavení
+      </a>
     </nav>
     <router-outlet />
   `,
