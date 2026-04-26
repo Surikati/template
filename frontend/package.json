@@ -9,7 +9,7 @@
     "build:all": "ng build shell && ng build core && ng build ui-kit && ng build template-editor && ng build questionnaire-runner && ng build api-client",
     "watch": "ng build shell --watch --configuration development",
     "test": "ng test",
-    "test:ci": "ng test ui-kit --watch=false --browsers=ChromeHeadlessCI && ng test core --watch=false --browsers=ChromeHeadlessCI",
+    "test:ci": "ng test ui-kit --watch=false --browsers=ChromeHeadlessCI && ng test core --watch=false --browsers=ChromeHeadlessCI && ng test api-client --watch=false --browsers=ChromeHeadlessCI && ng test template-editor --watch=false --browsers=ChromeHeadlessCI && ng test questionnaire-runner --watch=false --browsers=ChromeHeadlessCI",
     "lint": "eslint . --ext .ts,.html --max-warnings 0",
     "lint:fix": "eslint . --ext .ts,.html --fix",
     "e2e": "playwright test",

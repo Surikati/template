@@ -125,6 +125,14 @@
             "project": "projects/libs/template-editor/ng-package.json",
             "tsConfig": "projects/libs/template-editor/tsconfig.lib.json"
           }
+        },
+        "test": {
+          "builder": "@angular-devkit/build-angular:karma",
+          "options": {
+            "polyfills": ["zone.js", "zone.js/testing"],
+            "tsConfig": "projects/libs/template-editor/tsconfig.spec.json",
+            "karmaConfig": "karma.conf.js"
+          }
         }
       }
     },
@@ -140,6 +148,14 @@
             "project": "projects/libs/questionnaire-runner/ng-package.json",
             "tsConfig": "projects/libs/questionnaire-runner/tsconfig.lib.json"
           }
+        },
+        "test": {
+          "builder": "@angular-devkit/build-angular:karma",
+          "options": {
+            "polyfills": ["zone.js", "zone.js/testing"],
+            "tsConfig": "projects/libs/questionnaire-runner/tsconfig.spec.json",
+            "karmaConfig": "karma.conf.js"
+          }
         }
       }
     },
@@ -154,6 +170,14 @@
           "options": {
             "project": "projects/libs/api-client/ng-package.json",
             "tsConfig": "projects/libs/api-client/tsconfig.lib.json"
+          }
+        },
+        "test": {
+          "builder": "@angular-devkit/build-angular:karma",
+          "options": {
+            "polyfills": ["zone.js", "zone.js/testing"],
+            "tsConfig": "projects/libs/api-client/tsconfig.spec.json",
+            "karmaConfig": "karma.conf.js"
           }
         }
       }
