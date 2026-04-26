@@ -9,7 +9,6 @@ import {
   input,
   signal,
 } from '@angular/core';
-import { toSignal } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
 import { MessageService } from 'primeng/api';

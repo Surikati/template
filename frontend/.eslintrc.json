@@ -1,0 +1,139 @@
+{
+  "root": true,
+  "ignorePatterns": [
+    "dist/",
+    "node_modules/",
+    "projects/libs/api-client/src/lib/generated/",
+    "**/*.d.ts"
+  ],
+  "overrides": [
+    {
+      "files": ["*.ts"],
+      "extends": [
+        "eslint:recommended",
+        "plugin:@typescript-eslint/recommended",
+        "plugin:@angular-eslint/recommended",
+        "plugin:@angular-eslint/template/process-inline-templates"
+      ],
+      "rules": {
+        "@angular-eslint/component-selector": [
+          "error",
+          { "type": "element", "style": "kebab-case" }
+        ],
+        "@angular-eslint/directive-selector": [
+          "error",
+          { "type": "attribute", "style": "camelCase" }
+        ],
+        "@typescript-eslint/no-unused-vars": [
+          "warn",
+          { "argsIgnorePattern": "^_", "varsIgnorePattern": "^_" }
+        ],
+        "@typescript-eslint/no-explicit-any": "warn"
+      }
+    },
+    {
+      "files": ["projects/shell/**/*.ts"],
+      "rules": {
+        "@angular-eslint/component-selector": [
+          "error",
+          { "type": "element", "style": "kebab-case", "prefix": "tm" }
+        ],
+        "@angular-eslint/directive-selector": [
+          "error",
+          { "type": "attribute", "style": "camelCase", "prefix": "tm" }
+        ]
+      }
+    },
+    {
+      "files": ["projects/libs/core/**/*.ts"],
+      "rules": {
+        "@angular-eslint/component-selector": [
+          "error",
+          { "type": "element", "style": "kebab-case", "prefix": "tmc" }
+        ],
+        "@angular-eslint/directive-selector": [
+          "error",
+          { "type": "attribute", "style": "camelCase", "prefix": "tmc" }
+        ]
+      }
+    },
+    {
+      "files": ["projects/libs/ui-kit/**/*.ts"],
+      "rules": {
+        "@angular-eslint/component-selector": [
+          "error",
+          { "type": "element", "style": "kebab-case", "prefix": "tmu" }
+        ],
+        "@angular-eslint/directive-selector": [
+          "error",
+          { "type": "attribute", "style": "camelCase", "prefix": "tmu" }
+        ]
+      }
+    },
+    {
+      "files": ["projects/libs/template-editor/**/*.ts"],
+      "rules": {
+        "@angular-eslint/component-selector": [
+          "error",
+          { "type": "element", "style": "kebab-case", "prefix": "tme" }
+        ],
+        "@angular-eslint/directive-selector": [
+          "error",
+          { "type": "attribute", "style": "camelCase", "prefix": "tme" }
+        ]
+      }
+    },
+    {
+      "files": ["projects/libs/questionnaire-runner/**/*.ts"],
+      "rules": {
+        "@angular-eslint/component-selector": [
+          "error",
+          { "type": "element", "style": "kebab-case", "prefix": "tmq" }
+        ],
+        "@angular-eslint/directive-selector": [
+          "error",
+          { "type": "attribute", "style": "camelCase", "prefix": "tmq" }
+        ]
+      }
+    },
+    {
+      "files": ["projects/libs/api-client/**/*.ts"],
+      "rules": {
+        "@angular-eslint/component-selector": [
+          "error",
+          { "type": "element", "style": "kebab-case", "prefix": "tma" }
+        ],
+        "@angular-eslint/directive-selector": [
+          "error",
+          { "type": "attribute", "style": "camelCase", "prefix": "tma" }
+        ]
+      }
+    },
+    {
+      "files": ["*.html"],
+      "extends": [
+        "plugin:@angular-eslint/template/recommended",
+        "plugin:@angular-eslint/template/accessibility"
+      ],
+      "rules": {
+        "@angular-eslint/template/label-has-associated-control": [
+          "error",
+          {
+            "controlComponents": [
+              "p-inputText",
+              "p-dropdown",
+              "p-inputNumber",
+              "p-multiSelect",
+              "p-chips",
+              "p-calendar",
+              "p-checkbox",
+              "p-radioButton",
+              "p-selectButton",
+              "p-inputSwitch"
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

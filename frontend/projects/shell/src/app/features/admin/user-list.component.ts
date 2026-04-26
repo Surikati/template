@@ -5,7 +5,6 @@ import { ButtonModule } from 'primeng/button';
 import { TagModule } from 'primeng/tag';
 import { ChipModule } from 'primeng/chip';
 import { MessageService } from 'primeng/api';
-import { toSignal } from '@angular/core/rxjs-interop';
 
 import { AdminApiService, UserResponse } from '@tmpmgmt/api-client';
 import { ProblemDetail } from '@tmpmgmt/core';

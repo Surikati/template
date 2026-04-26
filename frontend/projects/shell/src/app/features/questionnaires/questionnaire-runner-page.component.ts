@@ -22,7 +22,6 @@ import {
   QuestionnaireResponse,
   QuestionnaireVersionResponse,
   RuleInput,
-  SectionResponse,
   SessionResponse,
 } from '@tmpmgmt/api-client';
 import { ProblemDetail } from '@tmpmgmt/core';
