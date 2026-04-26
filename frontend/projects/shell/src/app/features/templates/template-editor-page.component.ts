@@ -9,7 +9,7 @@ import {
   input,
   signal,
 } from '@angular/core';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
 import { MessageService } from 'primeng/api';
 import { TagModule } from 'primeng/tag';
@@ -47,6 +47,7 @@ type SaveState = 'idle' | 'saving' | 'saved' | 'error';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     DatePipe,
+    RouterLink,
     ButtonModule,
     TagModule,
     TemplateEditorComponent,
@@ -119,14 +120,27 @@ type SaveState = 'idle' | 'saving' | 'saved' | 'error';
                     — {{ v.publishedAt | date: 'medium' }}
                     @if (v.changeNote) { <span class="note">· {{ v.changeNote }}</span> }
                   </div>
-                  <p-button
-                    label="Dotazník"
-                    icon="pi pi-list"
-                    [text]="true"
-                    severity="secondary"
-                    size="small"
-                    (onClick)="openQuestionnaire(tpl.id, v.versionNumber)"
-                  />
+                  <div class="version-actions">
+                    @if (v.versionNumber > 1) {
+                      <p-button
+                        label="Porovnat s předchozí"
+                        icon="pi pi-compare"
+                        [text]="true"
+                        severity="secondary"
+                        size="small"
+                        [routerLink]="['/templates', tpl.id, 'diff']"
+                        [queryParams]="{ from: v.versionNumber - 1, to: v.versionNumber }"
+                      />
+                    }
+                    <p-button
+                      label="Dotazník"
+                      icon="pi pi-list"
+                      [text]="true"
+                      severity="secondary"
+                      size="small"
+                      (onClick)="openQuestionnaire(tpl.id, v.versionNumber)"
+                    />
+                  </div>
                 </li>
               }
             </ul>
@@ -179,6 +193,7 @@ type SaveState = 'idle' | 'saving' | 'saved' | 'error';
       .versions ul { list-style: none; padding: 0; margin: 0; }
       .versions li { padding: 0.5rem 0; border-bottom: 1px solid #f4f4f5; }
       .version-row { display: flex; justify-content: space-between; align-items: center; gap: 1rem; }
+      .version-actions { display: flex; gap: 0.25rem; }
       .note { color: #71717a; font-size: 0.9rem; }
       .muted { color: #71717a; }
     `,

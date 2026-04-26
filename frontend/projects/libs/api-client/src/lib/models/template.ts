@@ -54,3 +54,53 @@ export interface UpdateDraftRequest {
 export interface PublishVersionRequest {
   changeNote?: string;
 }
+
+export interface TemplateVersionDiffResponse {
+  templateId: string;
+  from: VersionSnapshot;
+  to: VersionSnapshot;
+  summary: DiffSummary;
+}
+
+export interface VersionSnapshot {
+  versionNumber: number;
+  content: unknown;
+  variablesSchema: unknown;
+  changeNote?: string;
+  publishedAt: string;
+  publishedBy: string;
+}
+
+export interface DiffSummary {
+  contentChanged: boolean;
+  variablesSchemaChanged: boolean;
+}
+
+export interface TemplateBundle {
+  schemaVersion: number;
+  exportedAt: string;
+  template: BundleMetadata;
+  draft: BundleDraft;
+  versions: BundleVersion[];
+}
+
+export interface BundleMetadata {
+  slug: string;
+  name: string;
+  description?: string;
+  category?: string;
+  tags?: string[];
+}
+
+export interface BundleDraft {
+  content: unknown;
+  variablesSchema: unknown;
+}
+
+export interface BundleVersion {
+  versionNumber: number;
+  content: unknown;
+  variablesSchema: unknown;
+  changeNote?: string;
+  publishedAt?: string;
+}
