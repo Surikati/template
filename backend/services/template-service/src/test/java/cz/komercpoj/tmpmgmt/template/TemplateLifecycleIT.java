@@ -176,6 +176,45 @@ class TemplateLifecycleIT {
   }
 
   @Test
+  void diffVersions_returnsBothSnapshots_andFlagsContentChange() {
+    var t =
+        service.create(
+            new TemplateCommands.CreateTemplate("diffable", "Diffable", null, "legal", actor));
+    UUID templateId = t.getId();
+    ObjectNode schema = mapper.createObjectNode().put("type", "object");
+
+    ObjectNode v1Doc = mapper.createObjectNode().put("type", "doc").put("rev", 1);
+    service.saveDraft(new TemplateCommands.SaveDraft(templateId, v1Doc, schema, actor));
+    var v1 =
+        service.publishVersion(new TemplateCommands.PublishVersion(templateId, "first", actor));
+
+    ObjectNode v2Doc = mapper.createObjectNode().put("type", "doc").put("rev", 2);
+    service.saveDraft(new TemplateCommands.SaveDraft(templateId, v2Doc, schema, actor));
+    var v2 =
+        service.publishVersion(new TemplateCommands.PublishVersion(templateId, "second", actor));
+
+    var diff = service.diffVersions(templateId, v1.getVersionNumber(), v2.getVersionNumber());
+    assertThat(diff.from().getVersionNumber()).isEqualTo(1);
+    assertThat(diff.to().getVersionNumber()).isEqualTo(2);
+    assertThat(diff.from().getContent().get("rev").asInt()).isEqualTo(1);
+    assertThat(diff.to().getContent().get("rev").asInt()).isEqualTo(2);
+    assertThat(diff.from().getContent()).isNotEqualTo(diff.to().getContent());
+    assertThat(diff.from().getVariablesSchema()).isEqualTo(diff.to().getVariablesSchema());
+  }
+
+  @Test
+  void diffVersions_unknownVersion_throwsNotFound() {
+    var t =
+        service.create(
+            new TemplateCommands.CreateTemplate("diff-404", "404", null, "legal", actor));
+    UUID templateId = t.getId();
+
+    assertThatThrownBy(() -> service.diffVersions(templateId, 1, 2))
+        .isInstanceOf(cz.komercpoj.tmpmgmt.common.NotFoundException.class)
+        .hasMessageContaining("version_not_found");
+  }
+
+  @Test
   void publishOnArchivedTemplate_throwsConflict() {
     var t =
         service.create(

@@ -4,6 +4,7 @@ import cz.komercpoj.tmpmgmt.template.api.dto.CreateTemplateRequest;
 import cz.komercpoj.tmpmgmt.template.api.dto.PublishVersionRequest;
 import cz.komercpoj.tmpmgmt.template.api.dto.TemplateDraftResponse;
 import cz.komercpoj.tmpmgmt.template.api.dto.TemplateResponse;
+import cz.komercpoj.tmpmgmt.template.api.dto.TemplateVersionDiffResponse;
 import cz.komercpoj.tmpmgmt.template.api.dto.TemplateVersionResponse;
 import cz.komercpoj.tmpmgmt.template.api.dto.UpdateDraftRequest;
 import cz.komercpoj.tmpmgmt.template.api.dto.UpdateMetadataRequest;
@@ -88,6 +89,14 @@ public class TemplateController {
   @GetMapping("/{id}/versions")
   public List<TemplateVersionResponse> listVersions(@PathVariable UUID id) {
     return mapper.toVersionResponses(service.listVersions(id));
+  }
+
+  @GetMapping("/{id}/versions/diff")
+  public TemplateVersionDiffResponse diffVersions(
+      @PathVariable UUID id,
+      @RequestParam("from") int fromVersion,
+      @RequestParam("to") int toVersion) {
+    return mapper.toDiffResponse(id, service.diffVersions(id, fromVersion, toVersion));
   }
 
   @PostMapping("/{id}/versions")

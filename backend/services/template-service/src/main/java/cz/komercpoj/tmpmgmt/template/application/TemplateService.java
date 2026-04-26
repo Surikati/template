@@ -115,6 +115,39 @@ public class TemplateService {
   }
 
   @Transactional(readOnly = true)
+  public VersionDiff diffVersions(UUID templateId, int fromVersion, int toVersion) {
+    getById(templateId);
+    TemplateVersionEntity from =
+        versions
+            .findByTemplateIdAndVersionNumber(templateId, fromVersion)
+            .orElseThrow(
+                () ->
+                    new NotFoundException(
+                        "template.version_not_found",
+                        "Template "
+                            + templateId
+                            + " has no version "
+                            + fromVersion
+                            + " (passed as 'from')"));
+    TemplateVersionEntity to =
+        versions
+            .findByTemplateIdAndVersionNumber(templateId, toVersion)
+            .orElseThrow(
+                () ->
+                    new NotFoundException(
+                        "template.version_not_found",
+                        "Template "
+                            + templateId
+                            + " has no version "
+                            + toVersion
+                            + " (passed as 'to')"));
+    return new VersionDiff(from, to);
+  }
+
+  /** Pair of versions resolved by {@link #diffVersions}. */
+  public record VersionDiff(TemplateVersionEntity from, TemplateVersionEntity to) {}
+
+  @Transactional(readOnly = true)
   public List<TemplateVersionEntity> listVersions(UUID templateId) {
     // Ensure the template exists (404 vs empty list).
     getById(templateId);
