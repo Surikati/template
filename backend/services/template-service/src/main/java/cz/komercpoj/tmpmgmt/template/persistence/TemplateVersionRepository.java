@@ -10,6 +10,8 @@ public interface TemplateVersionRepository extends JpaRepository<TemplateVersion
 
   List<TemplateVersionEntity> findByTemplateIdOrderByVersionNumberDesc(UUID templateId);
 
+  Optional<TemplateVersionEntity> findFirstByTemplateIdOrderByVersionNumberDesc(UUID templateId);
+
   Optional<TemplateVersionEntity> findByTemplateIdAndVersionNumber(
       UUID templateId, int versionNumber);
 

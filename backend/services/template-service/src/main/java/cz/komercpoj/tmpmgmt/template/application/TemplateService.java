@@ -20,6 +20,8 @@ import cz.komercpoj.tmpmgmt.template.persistence.TemplateVersionEntity;
 import cz.komercpoj.tmpmgmt.template.persistence.TemplateVersionRepository;
 import java.time.Instant;
 import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
@@ -190,6 +192,18 @@ public class TemplateService {
     TemplateDraftEntity draft = getDraft(cmd.templateId());
 
     validator.validate(draft.getContent(), draft.getVariablesSchema());
+
+    // Idempotent publish: if the latest published version already carries the same content +
+    // variables schema as the draft, return it instead of inserting a duplicate snapshot. This
+    // collapses no-op republishes (e.g. user clicks "Publish" twice without editing) and keeps
+    // version_number monotonically meaningful.
+    Optional<TemplateVersionEntity> latest =
+        versions.findFirstByTemplateIdOrderByVersionNumberDesc(template.getId());
+    if (latest.isPresent()
+        && Objects.equals(latest.get().getContent(), draft.getContent())
+        && Objects.equals(latest.get().getVariablesSchema(), draft.getVariablesSchema())) {
+      return latest.get();
+    }
 
     int nextVersion = versions.findMaxVersionNumber(template.getId()) + 1;
     UUID versionId = UUID.randomUUID();

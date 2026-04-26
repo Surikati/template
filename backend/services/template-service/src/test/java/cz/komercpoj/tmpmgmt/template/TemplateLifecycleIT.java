@@ -124,6 +124,58 @@ class TemplateLifecycleIT {
   }
 
   @Test
+  void publishVersion_withUnchangedContent_isIdempotent() {
+    var t =
+        service.create(
+            new TemplateCommands.CreateTemplate(
+                "idempotent-pub", "Idempotent", null, "legal", actor));
+    UUID templateId = t.getId();
+
+    ObjectNode doc =
+        mapper
+            .createObjectNode()
+            .put("type", "doc")
+            .set(
+                "content",
+                mapper.createArrayNode().add(mapper.createObjectNode().put("type", "paragraph")));
+    ObjectNode schema =
+        mapper
+            .createObjectNode()
+            .put("$schema", "https://json-schema.org/draft/2020-12/schema")
+            .put("type", "object");
+    service.saveDraft(new TemplateCommands.SaveDraft(templateId, doc, schema, actor));
+
+    var v1 =
+        service.publishVersion(new TemplateCommands.PublishVersion(templateId, "first", actor));
+    assertThat(v1.getVersionNumber()).isEqualTo(1);
+
+    // Second publish without modifying the draft must return the same version row,
+    // not bump the number, and not stage a new outbox event.
+    var v1Again =
+        service.publishVersion(
+            new TemplateCommands.PublishVersion(templateId, "ignored note", actor));
+    assertThat(v1Again.getId()).isEqualTo(v1.getId());
+    assertThat(v1Again.getVersionNumber()).isEqualTo(1);
+    assertThat(versions.findByTemplateIdOrderByVersionNumberDesc(templateId)).hasSize(1);
+
+    Long publishedEvents =
+        jdbc.queryForObject(
+            "SELECT COUNT(*) FROM outbox_event WHERE aggregate_id = ? AND event_type = 'version.published'",
+            Long.class,
+            templateId.toString());
+    assertThat(publishedEvents).isEqualTo(1L);
+
+    // Editing the draft and publishing again must produce v2.
+    ObjectNode doc2 = doc.deepCopy();
+    doc2.put("foo", "bar");
+    service.saveDraft(new TemplateCommands.SaveDraft(templateId, doc2, schema, actor));
+    var v2 =
+        service.publishVersion(
+            new TemplateCommands.PublishVersion(templateId, "real change", actor));
+    assertThat(v2.getVersionNumber()).isEqualTo(2);
+  }
+
+  @Test
   void publishOnArchivedTemplate_throwsConflict() {
     var t =
         service.create(
