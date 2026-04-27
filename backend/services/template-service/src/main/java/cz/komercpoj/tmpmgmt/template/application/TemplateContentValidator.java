@@ -1,6 +1,5 @@
 package cz.komercpoj.tmpmgmt.template.application;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.networknt.schema.JsonSchema;
 import com.networknt.schema.JsonSchemaFactory;
 import com.networknt.schema.SpecVersion;
@@ -8,9 +7,9 @@ import cz.komercpoj.tmpmgmt.common.ValidationException;
 import cz.komercpoj.tmpmgmt.expression.ExpressionEvaluator;
 import cz.komercpoj.tmpmgmt.expression.ExpressionException;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import org.springframework.stereotype.Component;
+import tools.jackson.databind.JsonNode;
 
 /**
  * Structural + expression validation for a template AST and its variables schema.
@@ -49,7 +48,9 @@ public class TemplateContentValidator {
       return;
     }
     try {
-      JsonSchema parsed = schemaFactory.getSchema(variablesSchema);
+      // networknt's getSchema(JsonNode) overload takes a Jackson 2 JsonNode; passing the
+      // serialized form lets the library re-parse with its own Jackson 2 instance.
+      JsonSchema parsed = schemaFactory.getSchema(variablesSchema.toString());
       // Touch the schema to force resolution; networknt parses lazily otherwise.
       parsed.initializeValidators();
     } catch (RuntimeException ex) {
@@ -75,9 +76,7 @@ public class TemplateContentValidator {
   }
 
   private void walk(JsonNode nodes, List<String> violations) {
-    Iterator<JsonNode> it = nodes.elements();
-    while (it.hasNext()) {
-      JsonNode node = it.next();
+    for (JsonNode node : nodes) {
       String type = node.path("type").asText("");
       switch (type) {
         case "conditionBlock" -> validateExpr(node, "attrs.when", violations);

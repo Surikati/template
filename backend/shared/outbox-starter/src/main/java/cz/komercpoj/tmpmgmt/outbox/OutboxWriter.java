@@ -1,7 +1,7 @@
 package cz.komercpoj.tmpmgmt.outbox;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 import cz.komercpoj.tmpmgmt.common.DomainException;
 import java.sql.Timestamp;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -34,7 +34,7 @@ public class OutboxWriter {
     String json;
     try {
       json = mapper.writeValueAsString(payload);
-    } catch (JsonProcessingException e) {
+    } catch (JacksonException e) {
       throw new DomainException("outbox.serialization_failed", e.getMessage(), e);
     }
     OutboxEvent evt = OutboxEvent.pending(aggregateType, aggregateId, eventType, json);

@@ -1,9 +1,9 @@
 package cz.komercpoj.tmpmgmt.assembly.application;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.ObjectNode;
 import cz.komercpoj.tmpmgmt.assembly.client.ClauseServiceClient;
 import cz.komercpoj.tmpmgmt.assembly.client.ClauseVersionDto;
 import cz.komercpoj.tmpmgmt.common.DomainException;
@@ -47,7 +47,7 @@ public class ClauseResolver {
     JsonNode children = container.path("content");
     if (!children.isArray()) return container;
 
-    ObjectNode out = container.deepCopy();
+    ObjectNode out = (ObjectNode) container.deepCopy();
     ArrayNode resolvedChildren = mapper.createArrayNode();
     for (JsonNode child : children) {
       appendResolved(child, resolvedChildren, depth);

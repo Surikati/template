@@ -1,7 +1,7 @@
 package cz.komercpoj.tmpmgmt.questionnaire.application;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.node.ObjectNode;
 import cz.komercpoj.tmpmgmt.common.ConflictException;
 import cz.komercpoj.tmpmgmt.common.NotFoundException;
 import cz.komercpoj.tmpmgmt.outbox.OutboxWriter;

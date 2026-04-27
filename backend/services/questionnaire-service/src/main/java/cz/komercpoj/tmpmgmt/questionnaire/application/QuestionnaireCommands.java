@@ -1,6 +1,6 @@
 package cz.komercpoj.tmpmgmt.questionnaire.application;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 import cz.komercpoj.tmpmgmt.questionnaire.domain.QuestionType;
 import java.util.List;
 import java.util.Map;

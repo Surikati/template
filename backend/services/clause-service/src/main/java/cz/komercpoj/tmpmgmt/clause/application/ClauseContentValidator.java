@@ -1,11 +1,10 @@
 package cz.komercpoj.tmpmgmt.clause.application;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 import cz.komercpoj.tmpmgmt.common.ValidationException;
 import cz.komercpoj.tmpmgmt.expression.ExpressionEvaluator;
 import cz.komercpoj.tmpmgmt.expression.ExpressionException;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import org.springframework.stereotype.Component;
 
@@ -50,9 +49,7 @@ public class ClauseContentValidator {
   }
 
   private void walk(JsonNode nodes, List<String> violations) {
-    Iterator<JsonNode> it = nodes.elements();
-    while (it.hasNext()) {
-      JsonNode node = it.next();
+    for (JsonNode node : nodes) {
       String type = node.path("type").asText("");
       switch (type) {
         case "conditionBlock" -> validateExpr(node, "attrs.when", violations);

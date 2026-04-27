@@ -1,6 +1,6 @@
 package cz.komercpoj.tmpmgmt.assembly.persistence;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 import cz.komercpoj.tmpmgmt.assembly.domain.AssemblyState;
 import jakarta.persistence.*;
 import java.time.Instant;

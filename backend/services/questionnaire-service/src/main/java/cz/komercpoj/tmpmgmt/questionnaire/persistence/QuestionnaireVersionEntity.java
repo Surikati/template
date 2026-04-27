@@ -1,6 +1,6 @@
 package cz.komercpoj.tmpmgmt.questionnaire.persistence;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 import jakarta.persistence.*;
 import java.time.Instant;
 import java.util.UUID;

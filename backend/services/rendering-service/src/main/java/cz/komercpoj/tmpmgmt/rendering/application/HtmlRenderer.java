@@ -1,9 +1,8 @@
 package cz.komercpoj.tmpmgmt.rendering.application;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 import cz.komercpoj.tmpmgmt.expression.ExpressionEvaluator;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import org.springframework.stereotype.Component;
@@ -48,9 +47,7 @@ public class HtmlRenderer {
   }
 
   private void walkBlocks(JsonNode blocks, Map<String, Object> data, StringBuilder sb) {
-    Iterator<JsonNode> it = blocks.elements();
-    while (it.hasNext()) {
-      JsonNode node = it.next();
+    for (JsonNode node : blocks) {
       String type = node.path("type").asText("");
       switch (type) {
         case "paragraph" -> emitParagraph(node, data, sb, "p", "");
@@ -85,9 +82,7 @@ public class HtmlRenderer {
 
     JsonNode inlines = paragraphNode.path("content");
     if (inlines.isArray()) {
-      Iterator<JsonNode> it = inlines.elements();
-      while (it.hasNext()) {
-        JsonNode inline = it.next();
+      for (JsonNode inline : inlines) {
         switch (inline.path("type").asText("")) {
           case "text" -> sb.append(escapeHtml(inline.path("text").asText("")));
           case "variable" -> {

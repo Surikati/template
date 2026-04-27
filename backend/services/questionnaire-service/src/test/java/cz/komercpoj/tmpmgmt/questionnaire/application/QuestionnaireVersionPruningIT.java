@@ -2,7 +2,7 @@ package cz.komercpoj.tmpmgmt.questionnaire.application;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import cz.komercpoj.tmpmgmt.questionnaire.TestSecurityConfig;
 import cz.komercpoj.tmpmgmt.questionnaire.TestcontainersConfig;
 import cz.komercpoj.tmpmgmt.questionnaire.persistence.QuestionnaireVersionEntity;
