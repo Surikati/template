@@ -1,6 +1,6 @@
 package cz.komercpoj.tmpmgmt.assembly.application;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 import cz.komercpoj.tmpmgmt.assembly.application.events.AssemblyEvents;
 import cz.komercpoj.tmpmgmt.assembly.persistence.AssemblyJobEntity;
 import cz.komercpoj.tmpmgmt.assembly.persistence.AssemblyJobRepository;

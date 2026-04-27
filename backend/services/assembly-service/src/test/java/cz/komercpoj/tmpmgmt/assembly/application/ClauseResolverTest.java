@@ -4,8 +4,8 @@ import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 import cz.komercpoj.tmpmgmt.assembly.client.ClauseServiceClient;
 import cz.komercpoj.tmpmgmt.assembly.client.ClauseVersionDto;
 import cz.komercpoj.tmpmgmt.common.DomainException;

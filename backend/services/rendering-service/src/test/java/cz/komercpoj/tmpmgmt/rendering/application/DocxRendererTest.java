@@ -2,9 +2,9 @@ package cz.komercpoj.tmpmgmt.rendering.application;
 
 import static org.assertj.core.api.Assertions.*;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.node.ObjectNode;
 import cz.komercpoj.tmpmgmt.expression.AntlrExpressionEvaluator;
 import java.io.ByteArrayInputStream;
 import java.util.List;

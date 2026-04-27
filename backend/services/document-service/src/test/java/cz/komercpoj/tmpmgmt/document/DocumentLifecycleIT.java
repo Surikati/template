@@ -2,7 +2,7 @@ package cz.komercpoj.tmpmgmt.document;
 
 import static org.assertj.core.api.Assertions.*;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import cz.komercpoj.tmpmgmt.document.application.DocumentCommands;
 import cz.komercpoj.tmpmgmt.document.application.DocumentService;
 import cz.komercpoj.tmpmgmt.document.domain.FileFormat;

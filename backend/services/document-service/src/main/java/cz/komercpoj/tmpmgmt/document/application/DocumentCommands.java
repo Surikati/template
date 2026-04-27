@@ -1,6 +1,6 @@
 package cz.komercpoj.tmpmgmt.document.application;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 import cz.komercpoj.tmpmgmt.document.domain.FileFormat;
 import java.util.List;
 import java.util.UUID;

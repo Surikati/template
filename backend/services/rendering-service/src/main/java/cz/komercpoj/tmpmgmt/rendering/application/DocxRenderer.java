@@ -1,12 +1,11 @@
 package cz.komercpoj.tmpmgmt.rendering.application;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 import cz.komercpoj.tmpmgmt.common.DomainException;
 import cz.komercpoj.tmpmgmt.expression.ExpressionEvaluator;
 import java.io.ByteArrayOutputStream;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import org.docx4j.jaxb.Context;
@@ -75,9 +74,7 @@ public class DocxRenderer {
   }
 
   private void walkBlocks(JsonNode blocks, Map<String, Object> data, MainDocumentPart doc) {
-    Iterator<JsonNode> it = blocks.elements();
-    while (it.hasNext()) {
-      JsonNode node = it.next();
+    for (JsonNode node : blocks) {
       switch (node.path("type").asText("")) {
         case "paragraph" -> doc.getContent().add(renderParagraph(node, data, null));
         case "heading" -> {
@@ -111,9 +108,7 @@ public class DocxRenderer {
 
     JsonNode inlines = paragraphNode.path("content");
     if (inlines.isArray()) {
-      Iterator<JsonNode> it = inlines.elements();
-      while (it.hasNext()) {
-        JsonNode inline = it.next();
+      for (JsonNode inline : inlines) {
         String type = inline.path("type").asText("");
         switch (type) {
           case "text" -> p.getContent().add(textRun(inline.path("text").asText("")));

@@ -1,7 +1,7 @@
 package cz.komercpoj.tmpmgmt.audit.application;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 import cz.komercpoj.tmpmgmt.audit.persistence.AuditEventEntity;
 import cz.komercpoj.tmpmgmt.audit.persistence.AuditEventRepository;
 import java.nio.charset.StandardCharsets;

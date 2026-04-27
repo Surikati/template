@@ -1,7 +1,7 @@
 package cz.komercpoj.tmpmgmt.assembly.application;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 import cz.komercpoj.tmpmgmt.assembly.client.DocumentServiceClient;
 import cz.komercpoj.tmpmgmt.assembly.client.RenderingServiceClient;
 import cz.komercpoj.tmpmgmt.assembly.client.TemplateServiceClient;

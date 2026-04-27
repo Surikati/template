@@ -2,8 +2,8 @@ package cz.komercpoj.tmpmgmt.template;
 
 import static org.assertj.core.api.Assertions.*;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.node.ObjectNode;
 import cz.komercpoj.tmpmgmt.common.ConflictException;
 import cz.komercpoj.tmpmgmt.template.application.TemplateCommands;
 import cz.komercpoj.tmpmgmt.template.application.TemplateService;

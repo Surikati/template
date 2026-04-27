@@ -2,7 +2,7 @@ package cz.komercpoj.tmpmgmt.questionnaire;
 
 import static org.assertj.core.api.Assertions.*;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import cz.komercpoj.tmpmgmt.common.ConflictException;
 import cz.komercpoj.tmpmgmt.questionnaire.application.QuestionnaireCommands;
 import cz.komercpoj.tmpmgmt.questionnaire.application.QuestionnaireService;

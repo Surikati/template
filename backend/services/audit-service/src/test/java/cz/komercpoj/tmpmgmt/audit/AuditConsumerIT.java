@@ -3,7 +3,7 @@ package cz.komercpoj.tmpmgmt.audit;
 import static org.assertj.core.api.Assertions.*;
 import static org.awaitility.Awaitility.await;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import cz.komercpoj.tmpmgmt.audit.persistence.AuditEventRepository;
 import java.time.Duration;
 import java.time.Instant;

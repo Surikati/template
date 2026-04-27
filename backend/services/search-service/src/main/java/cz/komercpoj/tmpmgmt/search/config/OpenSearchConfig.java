@@ -1,6 +1,5 @@
 package cz.komercpoj.tmpmgmt.search.config;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import org.apache.hc.core5.http.HttpHost;
 import org.opensearch.client.json.jackson.JacksonJsonpMapper;
@@ -29,11 +28,13 @@ public class OpenSearchConfig {
   public static final String INDEX_CLAUSE = "tmpmgmt-clauses";
 
   @Bean
-  OpenSearchClient openSearchClient(OpenSearchProperties props, ObjectMapper mapper) {
+  OpenSearchClient openSearchClient(OpenSearchProperties props) {
+    // JacksonJsonpMapper carries its own Jackson 2 ObjectMapper internally;
+    // OpenSearch client APIs are pinned to Jackson 2 and don't reuse the app mapper.
     var transport =
         ApacheHttpClient5TransportBuilder.builder(
                 new HttpHost(props.scheme(), props.host(), props.port()))
-            .setMapper(new JacksonJsonpMapper(mapper))
+            .setMapper(new JacksonJsonpMapper())
             .build();
     return new OpenSearchClient(transport);
   }
