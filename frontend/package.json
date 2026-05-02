@@ -46,7 +46,7 @@
     "@angular-eslint/utils": "^18.4.3",
     "@angular/cli": "^18.2.0",
     "@angular/compiler-cli": "^18.2.0",
-    "@openapitools/openapi-generator-cli": "^2.13.0",
+    "@openapitools/openapi-generator-cli": "^2.32.0",
     "@playwright/test": "^1.47.0",
     "@types/jasmine": "~6.0.0",
     "@types/node": "^25.6.0",
