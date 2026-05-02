@@ -16,7 +16,7 @@
     <description>OpenSearch-backed fulltext index of templates, clauses, documents.</description>
 
     <properties>
-        <opensearch-client.version>2.22.0</opensearch-client.version>
+        <opensearch-client.version>3.8.0</opensearch-client.version>
     </properties>
 
     <dependencies>
